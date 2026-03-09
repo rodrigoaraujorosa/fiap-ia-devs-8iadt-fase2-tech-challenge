@@ -14,6 +14,26 @@ if not hasattr(creator, "FitnessMax"):
 if not hasattr(creator, "Individual"):
     creator.create("Individual", list, fitness=creator.FitnessMax)  # type: ignore
 
+# ---------------------------------------------------------------------------
+# Constantes dos genes
+# ---------------------------------------------------------------------------
+N_ESTIMATORS_LOW,  N_ESTIMATORS_HIGH  = 20, 60
+MAX_DEPTH_OPTIONS = [5, 10, 15, 20, 25]
+MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH = 1, 10
+MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH = 2, 20
+
+GENE_LOW  = [N_ESTIMATORS_LOW,  min(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_LOW,  MIN_SAMPLES_SPLIT_LOW,  0]
+GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, MIN_SAMPLES_SPLIT_HIGH, 1]
+
+MUT_INDPB = 0.2   # probabilidade de mutar cada gene individualmente
+MUT_PB    = 0.2   # probabilidade de um indivíduo sofrer mutação
+CX_PB     = 0.5   # probabilidade de crossover entre dois indivíduos selecionados
+
+# Melhor configuração encontrada pelo GridSearch na Fase 1 (acurácia: 75,32 %):
+#   n_estimators=30, max_depth=15, min_samples_leaf=1, min_samples_split=5, max_features='log2'
+# Codificação: max_features → 1 (log2)
+GRIDSEARCH_SEED = [30, 15, 1, 5, 1]
+
 # Toolbox: registro central de operadores e geradores usados pelo DEAP
 toolbox = base.Toolbox()
 
@@ -22,18 +42,17 @@ toolbox = base.Toolbox()
 # Cada gene representa um hiperparâmetro do RandomForestClassifier.
 # A ordem no cromossomo é:
 #   [0] n_estimators      — número de árvores          (inteiro, 20–60)
-#   [1] max_depth         — profundidade máxima         (categórico: None,5,10,15,20,25)
+#   [1] max_depth         — profundidade máxima         (categórico: 5,10,15,20,25)
 #   [2] min_samples_leaf  — mínimo de amostras por folha (inteiro, 1–10)
 #   [3] min_samples_split — mínimo para dividir nó      (inteiro, 2–20)
 #   [4] max_features      — critério de features        (binário: 0='sqrt', 1='log2')
 # ---------------------------------------------------------------------------
 
-# 
-toolbox.register("attr_n_estimators", random.randint, 20, 60)
-toolbox.register("attr_max_depth", random.choice, [None, 5, 10, 15, 20, 25])
-toolbox.register("attr_min_leaf", random.randint, 1, 10)
-toolbox.register("attr_min_split", random.randint, 2, 20)
-toolbox.register("attr_features", random.randint, 0, 1)
+toolbox.register("attr_n_estimators", random.randint, N_ESTIMATORS_LOW, N_ESTIMATORS_HIGH)
+toolbox.register("attr_max_depth",    random.choice,  MAX_DEPTH_OPTIONS)
+toolbox.register("attr_min_leaf",     random.randint, MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH)
+toolbox.register("attr_min_split",    random.randint, MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH)
+toolbox.register("attr_features",     random.randint, 0, 1)
 
 # Cria um indivíduo percorrendo os 5 geradores de genes exatamente 1 vez (n=1)
 toolbox.register(
@@ -86,7 +105,7 @@ def create_seeded_pop(n_pop):
     pop = getattr(toolbox, "population")(n=n_pop)
 
     # Semente: cromossomo com os hiperparâmetros do melhor resultado do GridSearch
-    seed_ind = creator.Individual([30, 15, 1, 5, 1])  # type: ignore
+    seed_ind = creator.Individual(GRIDSEARCH_SEED)  # type: ignore
     pop[0] = seed_ind
     return pop
 
@@ -116,9 +135,9 @@ def run_ga(X_train, y_train, n_pop=20, ngen=10):
     toolbox.register(
         "mutate",
         tools.mutUniformInt,
-        low=[20, 1, 1, 2, 0],   # limites inferiores por gene
-        up=[60, 30, 10, 20, 1],  # limites superiores por gene
-        indpb=0.2,               # probabilidade de mutar cada gene individualmente
+        low=GENE_LOW,
+        up=GENE_HIGH,
+        indpb=MUT_INDPB,
     )
 
     # Seleção por torneio: escolhe o melhor entre 3 indivíduos sorteados
@@ -130,10 +149,10 @@ def run_ga(X_train, y_train, n_pop=20, ngen=10):
     hof = tools.HallOfFame(1)
 
     # eaSimple: loop geracional padrão
-    #   cxpb=0.5  — probabilidade de crossover entre dois indivíduos selecionados
-    #   mutpb=0.2 — probabilidade de um indivíduo sofrer mutação
+    #   cxpb=CX_PB  — probabilidade de crossover entre dois indivíduos selecionados
+    #   mutpb=MUT_PB — probabilidade de um indivíduo sofrer mutação
     algorithms.eaSimple(
-        populacao, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, halloffame=hof
+        populacao, toolbox, cxpb=CX_PB, mutpb=MUT_PB, ngen=ngen, halloffame=hof
     )
 
     return hof[0]
