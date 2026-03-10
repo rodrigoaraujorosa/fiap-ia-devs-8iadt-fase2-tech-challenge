@@ -7,6 +7,7 @@ import copy
 import os
 import sys
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 from sklearn.ensemble import RandomForestClassifier
@@ -23,7 +24,9 @@ from engine.ga_handmade import (
     evaluate,
 )
 
-# ── Configuração da página ───────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Configuração da página
+# --------------------------------------------------------------------------------
 st.set_page_config(
     page_title="AG · Otimização de RandomForest",
     page_icon="🧬",
@@ -34,8 +37,9 @@ DATA_PATH = os.path.join(
     os.path.dirname(__file__), "..", "data", "processed", "diabetes_treated.csv"
 )
 
-
-# ── Utilitários ─────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Utilitários para formatação, decodificação e exibição de indivíduos e populações
+# --------------------------------------------------------------------------------
 @st.cache_data
 def load_data() -> list:
     df = pd.read_csv(DATA_PATH)
@@ -102,8 +106,9 @@ def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int):
         if done:
             break
 
-
-# ── Layout estático ──────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Layout estático: título, descrição e sidebar para controle de parâmetros do AG
+# --------------------------------------------------------------------------------
 st.title("🧬 Algoritmo Genético — Otimização de RandomForest")
 st.markdown(
     "Acompanhe em **tempo real** a evolução dos hiperparâmetros do "
@@ -112,7 +117,9 @@ st.markdown(
     "obtido pelo GridSearch na Fase 1."
 )
 
-# ── Sidebar ──────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Sidebar para controle de parâmetros do AG
+# --------------------------------------------------------------------------------
 with st.sidebar:
     st.header("⚙️ Parâmetros do AG")
     n_pop = st.slider(
@@ -126,9 +133,11 @@ with st.sidebar:
         f"**Meta:** CV acc > **{PHASE1_CV_ACCURACY:.4f}**  \n"
         "*(GridSearch — Fase 1)*"
     )
-    start = st.button("▶ Iniciar AG", type="primary", use_container_width=True)
+    start = st.button("▶ Iniciar AG", type="primary", width="stretch")
 
-# ── Métricas ─────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Métricas: geração atual, melhor fitness, fitness médio e status (meta atingida ou evoluindo)
+# --------------------------------------------------------------------------------
 c1, c2, c3, c4 = st.columns(4)
 ph_gen    = c1.empty()
 ph_best   = c2.empty()
@@ -140,7 +149,9 @@ ph_best.metric("Melhor CV acc", "—", help=f"Meta: > {PHASE1_CV_ACCURACY:.4f}")
 ph_mean.metric("CV acc médio", "—")
 ph_status.metric("Status", "Aguardando")
 
-# ── Gráfico + melhor indivíduo ────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Gráfico + melhor indivíduo
+# --------------------------------------------------------------------------------
 chart_col, params_col = st.columns([3, 1])
 ph_chart = chart_col.empty()
 with params_col:
@@ -149,11 +160,15 @@ with params_col:
 
 st.divider()
 
-# ── Tabela da população ───────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Tabela da população
+# --------------------------------------------------------------------------------
 with st.expander("📋 População atual", expanded=True):
     ph_table = st.empty()
 
-# ── Execução do AG ────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
+# Executa o AG e atualiza as métricas, gráfico, melhor indivíduo e tabela da população a cada geração
+# --------------------------------------------------------------------------------
 if start:
     X_train, X_test, y_train, y_test = load_data()
 
@@ -184,12 +199,23 @@ if start:
         )
 
         # Gráfico de convergência
-        chart_df = pd.DataFrame(
-            {"Melhor fitness": hist_best, "Fitness médio": hist_mean},
-            index=gen_idx,
+        chart_df = (
+            pd.DataFrame(
+                {"Geração": gen_idx, "Melhor fitness": hist_best, "Fitness médio": hist_mean}
+            )
+            .melt("Geração", var_name="Métrica", value_name="CV acc")
         )
-        chart_df.index.name = "Geração"
-        ph_chart.line_chart(chart_df, height=280)
+        chart = (
+            alt.Chart(chart_df)
+            .mark_line()
+            .encode(
+                x=alt.X("Geração:Q", axis=alt.Axis(tickMinStep=1, format="d")),
+                y=alt.Y("CV acc:Q", scale=alt.Scale(zero=False), axis=alt.Axis(format=".4f")),
+                color="Métrica:N",
+            )
+            .properties(height=280)
+        )
+        ph_chart.altair_chart(chart, width="stretch")
 
         # Parâmetros do melhor indivíduo
         params = decode(best_ind)
@@ -213,7 +239,9 @@ if start:
             },
         )
 
-    # ── Resultado final ───────────────────────────────────────────────────────
+    # --------------------------------------------------------------------------------
+    # Resultado final
+    # --------------------------------------------------------------------------------
     if last_stats:
         best_ind = last_stats["best_ind"]
         best_fit = last_stats["best_fitness"]
