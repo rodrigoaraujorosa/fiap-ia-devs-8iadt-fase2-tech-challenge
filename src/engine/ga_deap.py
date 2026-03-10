@@ -15,24 +15,36 @@ if not hasattr(creator, "Individual"):
     creator.create("Individual", list, fitness=creator.FitnessMax)  # type: ignore
 
 # ---------------------------------------------------------------------------
-# Constantes dos genes
+# Constantes e configurações do AG
 # ---------------------------------------------------------------------------
-N_ESTIMATORS_LOW,  N_ESTIMATORS_HIGH  = 20, 60
-MAX_DEPTH_OPTIONS = [5, 10, 15, 20, 25]
-MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH = 1, 10
-MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH = 2, 20
+N_ESTIMATORS_LOW,  N_ESTIMATORS_HIGH  = 20, 60          # intervalo do número de árvores na floresta
+MAX_DEPTH_OPTIONS = [5, 10, 15, 20, 25]                 # profundidades máximas permitidas para as árvores
+MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH = 1, 10     # intervalo do mínimo de amostras por folha
+MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH = 2, 20   # intervalo do mínimo de amostras para dividir um nó
 
+# Limites inferior e superior de cada gene do cromossomo, usados pelo mutUniformInt.
+# Ordem: [n_estimators, max_depth, min_samples_leaf, min_samples_split, max_features]
+# max_features é binário: 0 = 'sqrt', 1 = 'log2'
 GENE_LOW  = [N_ESTIMATORS_LOW,  min(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_LOW,  MIN_SAMPLES_SPLIT_LOW,  0]
 GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, MIN_SAMPLES_SPLIT_HIGH, 1]
 
-MUT_INDPB = 0.2   # probabilidade de mutar cada gene individualmente
-MUT_PB    = 0.2   # probabilidade de um indivíduo sofrer mutação
+MUT_INDPB = 0.5   # probabilidade de mutar cada gene individualmente (↑ para maior diversidade nos genes)
+MUT_PB    = 0.4   # probabilidade de um indivíduo sofrer mutação    (↑ para mais exploração por geração)
 CX_PB     = 0.5   # probabilidade de crossover entre dois indivíduos selecionados
 
-# Melhor configuração encontrada pelo GridSearch na Fase 1 (acurácia: 75,32 %):
+# Peso da penalidade pelo desvio padrão do CV:
+# fitness = mean_cv - CV_STD_PENALTY * std_cv
+# Penaliza soluções instáveis entre os folds sem dominar a métrica principal.
+CV_STD_PENALTY = 0.1
+
+# Melhor configuração encontrada pelo GridSearch no Tech Challenge da Fase 1 (CV acurácia: 78,67%; acurácia: 75,32 %):
 #   n_estimators=30, max_depth=15, min_samples_leaf=1, min_samples_split=5, max_features='log2'
 # Codificação: max_features → 1 (log2)
 GRIDSEARCH_SEED = [30, 15, 1, 5, 1]
+
+# Meta de acurácia CV 5-fold que o AG deve superar para encerrar
+# (média obtida pelo GridSearch no Tech Challenge da Fase 1)
+PHASE1_CV_ACCURACY = 0.7867
 
 # Toolbox: registro central de operadores e geradores usados pelo DEAP
 toolbox = base.Toolbox()
@@ -74,7 +86,9 @@ toolbox.register("population", tools.initRepeat, list, getattr(toolbox, "individ
 
 def evaluate(individual, X, y):
     """Função de aptidão: treina um RandomForest com os hiperparâmetros do indivíduo
-    e retorna a acurácia média em validação cruzada de 3 folds.
+    e retorna  mean_cv - CV_STD_PENALTY * std_cv  (validação cruzada de 5 folds).
+    Combinar média e desvio padrão premia modelos acurados E estáveis entre os folds,
+    evitando soluções que acertam em alguns folds mas erram muito em outros.
     O DEAP exige que o retorno seja uma tupla, mesmo com um único valor.
     """
     # Decodifica o gene binário de max_features para o valor esperado pelo sklearn
@@ -89,8 +103,8 @@ def evaluate(individual, X, y):
         random_state=42,
         n_jobs=-1,
     )
-    scores = cross_val_score(clf, X, y, cv=3)
-    return (scores.mean(),)
+    scores = cross_val_score(clf, X, y, cv=5)
+    return (scores.mean() - CV_STD_PENALTY * scores.std(),)
 
 
 def create_seeded_pop(n_pop):
@@ -100,7 +114,7 @@ def create_seeded_pop(n_pop):
     Melhor resultado anterior:
         {'max_depth': 15, 'max_features': 'log2', 'min_samples_leaf': 1,
          'min_samples_split': 5, 'n_estimators': 30}
-    Codificado como: [n_estimators=30, max_depth_idx=3→15, leaf=1, split=5, feat=1→log2]
+    Codificado como: [n_estimators=30, max_depth_idx=15, leaf=1, split=5, feat=1→log2]
     """
     pop = getattr(toolbox, "population")(n=n_pop)
 
@@ -110,15 +124,14 @@ def create_seeded_pop(n_pop):
     return pop
 
 
-def run_ga(X_train, y_train, n_pop=20, ngen=10):
-    """Executa o algoritmo genético e retorna o melhor indivíduo encontrado.
+def run_ga(X_train, y_train, n_pop=20):
+    """Executa o algoritmo genético geração a geração até superar PHASE1_CV_ACCURACY em CV 5-fold.
 
     Parâmetros
     ----------
     X_train : array-like  — features de treino
     y_train : array-like  — rótulos de treino
     n_pop   : int         — tamanho da população (padrão 20)
-    ngen    : int         — número de gerações  (padrão 10)
 
     Retorna
     -------
@@ -148,11 +161,27 @@ def run_ga(X_train, y_train, n_pop=20, ngen=10):
     # Hall of Fame: armazena o melhor indivíduo de todas as gerações
     hof = tools.HallOfFame(1)
 
-    # eaSimple: loop geracional padrão
-    #   cxpb=CX_PB  — probabilidade de crossover entre dois indivíduos selecionados
-    #   mutpb=MUT_PB — probabilidade de um indivíduo sofrer mutação
-    algorithms.eaSimple(
-        populacao, toolbox, cxpb=CX_PB, mutpb=MUT_PB, ngen=ngen, halloffame=hof
-    )
+    # Loop geracional sem limite fixo: encerra ao superar a média CV 5-fold do Tech Challenge da Fase 1
+    gen = 0
+    try:
+        while True:
+            populacao, _ = algorithms.eaSimple(
+                populacao, toolbox, cxpb=CX_PB, mutpb=MUT_PB, ngen=1,
+                halloffame=hof, verbose=False,
+            )
+            gen += 1
+            best_ind = hof[0]
+            cv_acc   = round(best_ind.fitness.values[0], 4)
+            feat_name = "sqrt" if best_ind[4] == 0 else "log2"
+            print(
+                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f}"
+                f" | n_estimators={best_ind[0]} max_depth={best_ind[1]}"
+                f" min_samples_leaf={best_ind[2]} min_samples_split={best_ind[3]} max_features={feat_name}"
+            )
+            if cv_acc > PHASE1_CV_ACCURACY:
+                print(f"      Meta superada na geração {gen} (CV: {cv_acc:.4f} > {PHASE1_CV_ACCURACY})")
+                break
+    except KeyboardInterrupt:
+        print(f"\n      Interrompido na geração {gen}. Retornando melhor indivíduo encontrado até agora.")
 
     return hof[0]
