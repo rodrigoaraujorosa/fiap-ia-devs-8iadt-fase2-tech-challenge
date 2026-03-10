@@ -29,8 +29,8 @@ GENE_LOW  = [N_ESTIMATORS_LOW,  min(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_LOW,  M
 GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, MIN_SAMPLES_SPLIT_HIGH, 1]
 
 MUT_INDPB = 0.5   # probabilidade de mutar cada gene individualmente (↑ para maior diversidade nos genes)
-MUT_PB    = 0.4   # probabilidade de um indivíduo sofrer mutação    (↑ para mais exploração por geração)
-CX_PB     = 0.5   # probabilidade de crossover entre dois indivíduos selecionados
+MUT_PB    = 0.6   # probabilidade de um indivíduo sofrer mutação    (↑ para mais exploração por geração)
+CX_PB     = 0.7   # probabilidade de crossover entre dois indivíduos selecionados
 
 # Peso da penalidade pelo desvio padrão do CV:
 # fitness = mean_cv - CV_STD_PENALTY * std_cv

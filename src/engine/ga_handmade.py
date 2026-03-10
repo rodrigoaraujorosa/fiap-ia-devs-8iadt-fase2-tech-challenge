@@ -41,8 +41,8 @@ GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, M
 # MUT_INDPB controla a granularidade da mutação: com 0.5, em média metade dos
 # genes de um indivíduo são alterados a cada aplicação do operador.
 MUT_INDPB = 0.5   # chance de cada gene ser mutado individualmente
-MUT_PB    = 0.4   # chance de um indivíduo ser submetido à mutação
-CX_PB     = 0.5   # chance de dois indivíduos realizarem crossover
+MUT_PB    = 0.6   # chance de um indivíduo ser submetido à mutação
+CX_PB     = 0.7   # chance de dois indivíduos realizarem crossover
 
 # Penalidade de estabilidade na função de aptidão.
 # Subtrair um múltiplo do desvio padrão do CV penaliza soluções instáveis
