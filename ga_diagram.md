@@ -12,8 +12,8 @@ flowchart TD
     E -- Sim --> Z([Retornar melhor indivíduo])
 
     E -- Não --> F[Seleção por Torneio<br/>tournsize=3, k=n_pop]
-    F --> G[Crossover de dois pontos<br/>CX_PB=0.7 por par]
-    G --> H[Mutação uniforme inteira<br/>MUT_PB=0.6 · MUT_INDPB=0.5]
+    F --> G[Crossover de dois pontos<br/>cx_pb por par]
+    G --> H[Mutação uniforme inteira<br/>mut_pb · mut_indpb por gene]
     H --> I[Avaliar filhos modificados<br/>fitness == None]
     I --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
     J --> K[Exibir geração atual<br/>log de progresso]
@@ -42,11 +42,11 @@ Penalizar o desvio padrão premia modelos acurados e estáveis entre os folds.
 
 | Parâmetro    | Valor | Descrição                                          |
 |--------------|-------|----------------------------------------------------|
-| `n_pop`              | 10     | Tamanho da população (padrão)                                              |
-| `CX_PB`              | 0.7    | Probabilidade de crossover entre dois indivíduos                           |
-| `MUT_PB`             | 0.6    | Probabilidade de um indivíduo sofrer mutação                               |
-| `MUT_INDPB`          | 0.5    | Probabilidade de mutar cada gene individualmente                           |
-| `tournsize`          | 3      | Candidatos por torneio na seleção                                          |
-| `target_improvement` | 0.0    | Melhoria % desejada sobre a meta base (0.0 = apenas superar 0.7867)       |
-| Meta base (CV)       | 0.7867 | Acurácia CV 5-fold do GridSearch da Fase 1                                 |
-| `target_cv`          | dinâmica | `PHASE1_CV_ACCURACY × (1 + target_improvement)` — critério de parada    |
+| `n_pop`              | 10       | Tamanho da população (padrão)                                                    |
+| `cx_pb`              | 0.7      | Probabilidade de crossover entre dois indivíduos *(configurável)*               |
+| `mut_pb`             | 0.6      | Probabilidade de um indivíduo sofrer mutação *(configurável)*                   |
+| `mut_indpb`          | 0.5      | Probabilidade de mutar cada gene individualmente *(configurável)*               |
+| `tournsize`          | 3        | Candidatos por torneio na seleção                                               |
+| `target_improvement` | 0.0      | Melhoria % desejada sobre a meta base (0.0 = apenas superar 0.7867) *(configurável)* |
+| Meta base (CV)       | 0.7867   | Acurácia CV 5-fold do GridSearch da Fase 1                                      |
+| `target_cv`          | dinâmica | `PHASE1_CV_ACCURACY × (1 + target_improvement)` — critério de parada            |

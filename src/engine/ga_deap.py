@@ -124,7 +124,15 @@ def create_seeded_pop(n_pop):
     return pop
 
 
-def run_ga(X_train, y_train, n_pop=10, target_improvement: float = 0.0):
+def run_ga(
+    X_train,
+    y_train,
+    n_pop=10,
+    target_improvement: float = 0.0,
+    cx_pb: float = CX_PB,
+    mut_pb: float = MUT_PB,
+    mut_indpb: float = MUT_INDPB,
+):
     """Executa o algoritmo genético geração a geração até superar a meta de acurácia dinâmica.
 
     Parâmetros
@@ -134,6 +142,9 @@ def run_ga(X_train, y_train, n_pop=10, target_improvement: float = 0.0):
     n_pop              : int        — tamanho da população (padrão 10)
     target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
                                       ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
+    cx_pb              : float      — probabilidade de crossover (padrão CX_PB = 0.7)
+    mut_pb             : float      — probabilidade de mutação por indivíduo (padrão MUT_PB = 0.6)
+    mut_indpb          : float      — probabilidade de mutação por gene (padrão MUT_INDPB = 0.5)
 
     Retorna
     -------
@@ -155,7 +166,7 @@ def run_ga(X_train, y_train, n_pop=10, target_improvement: float = 0.0):
         tools.mutUniformInt,
         low=GENE_LOW,
         up=GENE_HIGH,
-        indpb=MUT_INDPB,
+        indpb=mut_indpb,
     )
 
     # Seleção por torneio: escolhe o melhor entre 3 indivíduos sorteados
@@ -171,7 +182,7 @@ def run_ga(X_train, y_train, n_pop=10, target_improvement: float = 0.0):
     try:
         while True:
             populacao, _ = algorithms.eaSimple(
-                populacao, toolbox, cxpb=CX_PB, mutpb=MUT_PB, ngen=1,
+                populacao, toolbox, cxpb=cx_pb, mutpb=mut_pb, ngen=1,
                 halloffame=hof, verbose=False,
             )
             gen += 1

@@ -46,6 +46,27 @@ def parse_args():
         metavar="P",
         help="Melhoria percentual desejada sobre a meta base (padrão: 0.0 = sem melhoria, apenas superar PHASE1_CV_ACCURACY).",
     )
+    parser.add_argument(
+        "--cx_pb",
+        type=float,
+        default=0.7,
+        metavar="F",
+        help="Probabilidade de crossover entre dois indivíduos (padrão: 0.7).",
+    )
+    parser.add_argument(
+        "--mut_pb",
+        type=float,
+        default=0.6,
+        metavar="F",
+        help="Probabilidade de um indivíduo sofrer mutação (padrão: 0.6).",
+    )
+    parser.add_argument(
+        "--mut_indpb",
+        type=float,
+        default=0.5,
+        metavar="F",
+        help="Probabilidade de mutar cada gene individualmente (padrão: 0.5).",
+    )
     return parser.parse_args()
 
 
@@ -96,7 +117,14 @@ def main():
     print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta={PHASE1_CV_ACCURACY*(1+args.target_improvement):.4f})...")
     t0 = time.time()
     try:
-        best = run_ga(X_train, y_train, n_pop=args.n_pop, target_improvement=args.target_improvement)
+        best = run_ga(
+            X_train, y_train,
+            n_pop=args.n_pop,
+            target_improvement=args.target_improvement,
+            cx_pb=args.cx_pb,
+            mut_pb=args.mut_pb,
+            mut_indpb=args.mut_indpb,
+        )
     except KeyboardInterrupt:
         print("\n      Execução cancelada pelo usuário.")
         return

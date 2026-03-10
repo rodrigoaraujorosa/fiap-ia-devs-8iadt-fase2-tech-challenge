@@ -17,6 +17,9 @@ from sklearn.model_selection import train_test_split
 sys.path.insert(0, os.path.dirname(__file__))
 
 from engine.ga_handmade import (
+    CX_PB,
+    MUT_INDPB,
+    MUT_PB,
     PHASE1_CV_ACCURACY,
     Individual,
     _gen_loop,
@@ -68,7 +71,15 @@ def pop_to_df(population: list[Individual]) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("#").sort_values("fitness", ascending=False)
 
 
-def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int, target_improvement: float = 0.0):
+def run_ga_streaming(
+    X_train, y_train,
+    n_pop: int,
+    max_gen: int,
+    target_improvement: float = 0.0,
+    cx_pb: float = CX_PB,
+    mut_pb: float = MUT_PB,
+    mut_indpb: float = MUT_INDPB,
+):
     """Gerador: produz estatísticas da população após cada geração."""
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
@@ -90,7 +101,7 @@ def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int, target_improvem
     }
 
     for gen in range(1, max_gen + 1):
-        population = _gen_loop(population, X_train, y_train)
+        population = _gen_loop(population, X_train, y_train, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb)
 
         current_best = max(population, key=lambda ind: ind.fitness)  # type: ignore[arg-type]
         if current_best.fitness > best_ind.fitness:  # type: ignore[operator]
@@ -138,6 +149,19 @@ with st.sidebar:
         help=f"Percentual acima de {PHASE1_CV_ACCURACY:.4f} (GridSearch Fase 1) que o AG deve atingir.",
     ) / 100.0
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
+    st.subheader("🔬 Operadores genéticos")
+    cx_pb = st.slider(
+        "CX_PB — Prob. cruzamento", min_value=0.0, max_value=1.0, value=float(CX_PB), step=0.05,
+        help="Probabilidade de dois indivíduos realizarem cruzamento.",
+    )
+    mut_pb = st.slider(
+        "MUT_PB — Prob. mutação", min_value=0.0, max_value=1.0, value=float(MUT_PB), step=0.05,
+        help="Probabilidade de um indivíduo sofrer mutação.",
+    )
+    mut_indpb = st.slider(
+        "MUT_INDPB — Prob. por gene", min_value=0.0, max_value=1.0, value=float(MUT_INDPB), step=0.05,
+        help="Probabilidade de cada gene individual ser mutado.",
+    )
     st.divider()
     st.info(
         f"**Meta base:** {PHASE1_CV_ACCURACY:.4f} *(GridSearch — Fase 1)*  \n"
@@ -187,7 +211,8 @@ if start:
     gen_idx:   list[int]   = []
     last_stats: dict | None = None
 
-    for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement):
+    for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement,
+                                   cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb):
         last_stats = stats
         gen      = stats["gen"]
         best_fit = stats["best_fitness"]

@@ -206,18 +206,18 @@ def crossover(ind1: Individual, ind2: Individual) -> tuple[Individual, Individua
     return ind1, ind2
 
 
-def mutate(individual: Individual) -> tuple[Individual]:
+def mutate(individual: Individual, mut_indpb: float = MUT_INDPB) -> tuple[Individual]:
     """Mutação uniforme inteira: introduz diversidade alterando genes aleatoriamente.
 
-    Percorre cada gene e, com probabilidade MUT_INDPB, substitui seu valor por
+    Percorre cada gene e, com probabilidade mut_indpb, substitui seu valor por
     um inteiro sorteado uniformemente dentro dos limites GENE_LOW[i]–GENE_HIGH[i].
     O gene é modificado in-place; o fitness é invalidado (→ None) pelo chamador.
 
-    Com MUT_INDPB = 0.5 e cromossomo de 5 genes, em média 2–3 genes são
+    Com mut_indpb = 0.5 e cromossomo de 5 genes, em média 2–3 genes são
     alterados a cada aplicação do operador.
     """
     for i in range(len(individual)):
-        if random.random() < MUT_INDPB:
+        if random.random() < mut_indpb:
             # Novo valor respeitando os limites do espaço de busca do gene i
             individual[i] = random.randint(GENE_LOW[i], GENE_HIGH[i])
     return (individual,)
@@ -255,6 +255,9 @@ def _gen_loop(
     population: list[Individual],
     X,
     y,
+    cx_pb: float = CX_PB,
+    mut_pb: float = MUT_PB,
+    mut_indpb: float = MUT_INDPB,
 ) -> list[Individual]:
     """Executa um ciclo completo de uma geração (equivalente ao eaSimple do DEAP).
 
@@ -264,9 +267,9 @@ def _gen_loop(
     Passos
     ------
     1. Seleção   — gera offspring do mesmo tamanho da população via torneio.
-    2. Crossover — aplica crossover de 2 pontos em pares consecutivos com P = CX_PB.
+    2. Crossover — aplica crossover de 2 pontos em pares consecutivos com P = cx_pb.
                    O fitness dos filhos modificados é invalidado (→ None).
-    3. Mutação   — aplica mutação uniforme em cada indivíduo com P = MUT_PB.
+    3. Mutação   — aplica mutação uniforme em cada indivíduo com P = mut_pb.
                    O fitness do indivíduo mutado é invalidado (→ None).
     4. Avaliação — reavalia apenas os indivíduos com fitness == None,
                    economizando chamadas ao modelo para os não modificados.
@@ -276,6 +279,9 @@ def _gen_loop(
     population : list[Individual] — população da geração atual
     X          : array-like       — features de treino
     y          : array-like       — rótulos de treino
+    cx_pb      : float            — probabilidade de crossover (padrão CX_PB)
+    mut_pb     : float            — probabilidade de mutação por indivíduo (padrão MUT_PB)
+    mut_indpb  : float            — probabilidade de mutação por gene (padrão MUT_INDPB)
 
     Retorna
     -------
@@ -286,7 +292,7 @@ def _gen_loop(
 
     # 2 — Crossover em pares consecutivos (i-1, i) com passo 2
     for i in range(1, len(offspring), 2):
-        if random.random() < CX_PB:
+        if random.random() < cx_pb:
             offspring[i - 1], offspring[i] = crossover(offspring[i - 1], offspring[i])
             # Invalida o fitness: os filhos foram modificados e precisam ser reavaliados
             offspring[i - 1].fitness = None
@@ -294,8 +300,8 @@ def _gen_loop(
 
     # 3 — Mutação: cada indivíduo é candidato independentemente
     for ind in offspring:
-        if random.random() < MUT_PB:
-            mutate(ind)
+        if random.random() < mut_pb:
+            mutate(ind, mut_indpb)
             # Invalida o fitness: genes alterados → resultado do CV anterior não é mais válido
             ind.fitness = None
 
@@ -307,7 +313,15 @@ def _gen_loop(
     return offspring
 
 
-def run_ga(X_train, y_train, n_pop: int = 10, target_improvement: float = 0.0) -> Individual:
+def run_ga(
+    X_train,
+    y_train,
+    n_pop: int = 10,
+    target_improvement: float = 0.0,
+    cx_pb: float = CX_PB,
+    mut_pb: float = MUT_PB,
+    mut_indpb: float = MUT_INDPB,
+) -> Individual:
     """Ponto de entrada do AG: executa o ciclo evolutivo até atingir a meta de acurácia.
 
     Fluxo principal
@@ -328,6 +342,9 @@ def run_ga(X_train, y_train, n_pop: int = 10, target_improvement: float = 0.0) -
     n_pop              : int        — tamanho da população (padrão 10)
     target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
                                       ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
+    cx_pb              : float      — probabilidade de crossover (padrão CX_PB = 0.7)
+    mut_pb             : float      — probabilidade de mutação por indivíduo (padrão MUT_PB = 0.6)
+    mut_indpb          : float      — probabilidade de mutação por gene (padrão MUT_INDPB = 0.5)
 
     Retorna
     -------
@@ -348,7 +365,7 @@ def run_ga(X_train, y_train, n_pop: int = 10, target_improvement: float = 0.0) -
     gen = 0
     try:
         while True:
-            population = _gen_loop(population, X_train, y_train)
+            population = _gen_loop(population, X_train, y_train, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb)
             gen += 1
 
             # Atualiza o melhor global se a geração atual produziu um indivíduo superior
