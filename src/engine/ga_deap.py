@@ -111,10 +111,10 @@ def create_seeded_pop(n_pop):
     """Cria a população inicial e injeta o melhor resultado conhecido do GridSearch
     como primeiro indivíduo (elitismo de semente). Isso acelera a convergência
     pois o AG parte de um ponto já sabidamente bom.
-    Melhor resultado anterior:
+    Melhor resultado anterior obtido no GridSearch do Tech Challenge da Fase 1:
         {'max_depth': 15, 'max_features': 'log2', 'min_samples_leaf': 1,
          'min_samples_split': 5, 'n_estimators': 30}
-    Codificado como: [n_estimators=30, max_depth_idx=15, leaf=1, split=5, feat=1→log2]
+    Codificado como: [n_estimators=30, max_depth_idx=15, min_samples_leaf=1, min_samples_split=5, max_features=1→log2]
     """
     pop = getattr(toolbox, "population")(n=n_pop)
 
