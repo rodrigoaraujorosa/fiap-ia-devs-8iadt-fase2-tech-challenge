@@ -174,7 +174,7 @@ class TestCrossover:
         assert original_sum == result_sum
 
     def test_verbose_output(self, capsys):
-        """Exibe os cromossomos antes e depois do crossover para inspeção visual."""
+        """Exibe os indivíduos antes e depois do crossover para inspeção visual."""
         random.seed(42)
         ind1 = _make_ind([20, 5,  1,  2, 0])
         ind2 = _make_ind([60, 25, 10, 20, 1])
@@ -216,27 +216,25 @@ class TestMutate:
                     f"gene[{i}]={ind[i]} fora de [{GENE_LOW[i]}, {GENE_HIGH[i]}]"
                 )
 
-    def test_at_least_one_gene_mutates_with_indpb_1(self, monkeypatch):
-        """Com MUT_INDPB=1.0 todos os genes devem mudar (ou pelo menos serem reatribuídos)."""
-        monkeypatch.setattr("engine.ga_handmade.MUT_INDPB", 1.0)
+    def test_at_least_one_gene_mutates_with_indpb_1(self):
+        """Com mut_indpb=1.0 todos os genes devem ser reatribuídos."""
         random.seed(99)
         original = [30, 15, 1, 5, 1]
         ind = _make_ind(original[:])
-        mutate(ind)
+        mutate(ind, mut_indpb=1.0)
         # Com indpb=1.0 todos os genes são reatribuídos; verificamos apenas os limites
         for i in range(5):
             assert GENE_LOW[i] <= ind[i] <= GENE_HIGH[i]
 
-    def test_no_gene_mutates_with_indpb_0(self, monkeypatch):
-        """Com MUT_INDPB=0.0 nenhum gene deve ser alterado."""
-        monkeypatch.setattr("engine.ga_handmade.MUT_INDPB", 0.0)
+    def test_no_gene_mutates_with_indpb_0(self):
+        """Com mut_indpb=0.0 nenhum gene deve ser alterado."""
         original = [30, 15, 1, 5, 1]
         ind = _make_ind(original[:])
-        mutate(ind)
+        mutate(ind, mut_indpb=0.0)
         assert list(ind) == original
 
     def test_verbose_output(self, capsys):
-        """Exibe o cromossomo antes e após a mutação para inspeção visual."""
+        """Exibe o indivíduo antes e após a mutação para inspeção visual."""
         random.seed(0)
         original = [30, 15, 1, 5, 1]
         ind = _make_ind(original[:])

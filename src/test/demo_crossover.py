@@ -2,8 +2,8 @@
 Demo visual do operador de Crossover (dois pontos) — ga_handmade.py
 
 O crossover de dois pontos seleciona aleatoriamente um segmento contíguo
-[cx1, cx2) do cromossomo e troca esse segmento entre os dois pais.
-Com cromossomos de 5 genes, o segmento pode ter largura 1, 2, 3 ou 4 genes.
+[cx1, cx2) do indivíduo e troca esse segmento entre os dois pais.
+Com indivíduos de 5 genes, o segmento pode ter largura 1, 2, 3 ou 4 genes.
 Este demo encontra automaticamente um exemplo para cada largura possível,
 usando pais em que todos os 5 genes diferem — assim qualquer troca é visível.
 

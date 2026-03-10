@@ -22,7 +22,7 @@ MAX_DEPTH_OPTIONS = [5, 10, 15, 20, 25]                 # profundidades máximas
 MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH = 1, 10     # intervalo do mínimo de amostras por folha
 MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH = 2, 20   # intervalo do mínimo de amostras para dividir um nó
 
-# Limites inferior e superior de cada gene do cromossomo, usados pelo mutUniformInt.
+# Limites inferior e superior de cada gene do indivíduo, usados pelo mutUniformInt.
 # Ordem: [n_estimators, max_depth, min_samples_leaf, min_samples_split, max_features]
 # max_features é binário: 0 = 'sqrt', 1 = 'log2'
 GENE_LOW  = [N_ESTIMATORS_LOW,  min(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_LOW,  MIN_SAMPLES_SPLIT_LOW,  0]
@@ -52,7 +52,7 @@ toolbox = base.Toolbox()
 # ---------------------------------------------------------------------------
 # Definição dos genes
 # Cada gene representa um hiperparâmetro do RandomForestClassifier.
-# A ordem no cromossomo é:
+# A ordem no indivíduo é:
 #   [0] n_estimators      — número de árvores          (inteiro, 20–60)
 #   [1] max_depth         — profundidade máxima         (categórico: 5,10,15,20,25)
 #   [2] min_samples_leaf  — mínimo de amostras por folha (inteiro, 1–10)
@@ -118,7 +118,7 @@ def create_seeded_pop(n_pop):
     """
     pop = getattr(toolbox, "population")(n=n_pop)
 
-    # Semente: cromossomo com os hiperparâmetros do melhor resultado do GridSearch
+    # Semente: indivíduo com os hiperparâmetros do melhor resultado do GridSearch
     seed_ind = creator.Individual(GRIDSEARCH_SEED)  # type: ignore
     pop[0] = seed_ind
     return pop
@@ -148,7 +148,7 @@ def run_ga(
 
     Retorna
     -------
-    hof[0] : Individual — cromossomo com maior fitness já visto
+    hof[0] : Individual — indivíduo com maior fitness já visto
     """
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
@@ -160,7 +160,7 @@ def run_ga(
     toolbox.register("mate", tools.cxTwoPoint)
 
     # Mutação uniforme inteira: altera cada gene com probabilidade indpb,
-    # respeitando os limites [low, up] de cada posição do cromossomo
+    # respeitando os limites [low, up] de cada posição do indivíduo
     toolbox.register(
         "mutate",
         tools.mutUniformInt,

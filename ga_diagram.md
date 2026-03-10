@@ -20,7 +20,7 @@ flowchart TD
     K --> E
 ```
 
-## Cromossomo
+## Indivíduo
 
 Cada indivíduo é uma lista de 5 genes que codificam os hiperparâmetros do modelo:
 

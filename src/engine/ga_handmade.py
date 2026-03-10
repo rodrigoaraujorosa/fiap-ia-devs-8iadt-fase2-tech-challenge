@@ -1,7 +1,7 @@
 """Implementação manual (sem DEAP) de um Algoritmo Genético para otimização
 de hiperparâmetros do RandomForestClassifier.
 
-Estrutura do cromossomo (5 genes):
+Estrutura do indivíduo (5 genes):
   [0] n_estimators      — número de árvores da floresta      (int,  20–60)
   [1] max_depth         — profundidade máxima das árvores    (int,  5|10|15|20|25)
   [2] min_samples_leaf  — mínimo de amostras por folha       (int,  1–10)
@@ -10,7 +10,7 @@ Estrutura do cromossomo (5 genes):
 
 Fluxo do AG por geração:
   1. Seleção por torneio  → escolhe os pais mais aptos
-  2. Crossover de 2 pontos → combina segmentos dos cromossomos
+  2. Crossover de 2 pontos → combina segmentos dos indivíduos
   3. Mutação uniforme inteira → diversifica a população
   4. Avaliação (CV 5-fold)  → mede a aptidão de cada novo indivíduo
 
@@ -26,14 +26,14 @@ from sklearn.model_selection import cross_val_score
 # Constantes e configurações do AG
 # ---------------------------------------------------------------------------
 
-# Espaço de busca de cada hiperparâmetro — definem os limites do cromossomo.
+# Espaço de busca de cada hiperparâmetro — definem os limites do indivíduo.
 N_ESTIMATORS_LOW,  N_ESTIMATORS_HIGH  = 20, 60          # quantidade de árvores na floresta
 MAX_DEPTH_OPTIONS = [5, 10, 15, 20, 25]                 # valores possíveis para profundidade máxima
 MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH = 1, 10     # min de amostras em cada folha
 MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH = 2, 20   # min de amostras para dividir um nó interno
 
 # Vetores de limites usados pela mutação uniforme: GENE_LOW[i] e GENE_HIGH[i]
-# correspondem ao gene i do cromossomo. max_features (gene 4) é binário: 0='sqrt', 1='log2'.
+# correspondem ao gene i do indivíduo. max_features (gene 4) é binário: 0='sqrt', 1='log2'.
 GENE_LOW  = [N_ESTIMATORS_LOW,  min(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_LOW,  MIN_SAMPLES_SPLIT_LOW,  0]
 GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, MIN_SAMPLES_SPLIT_HIGH, 1]
 
@@ -50,7 +50,7 @@ CX_PB     = 0.7   # chance de dois indivíduos realizarem crossover
 # fitness = mean_cv - CV_STD_PENALTY × std_cv
 CV_STD_PENALTY = 0.1
 
-# Cromossomo semente: melhor solução encontrada pelo GridSearch na Fase 1
+# Indivíduo semente: melhor solução encontrada pelo GridSearch na Fase 1
 # (CV acc = 78,67 %). Injetado como primeiro indivíduo para acelerar a convergência.
 # Parâmetros: n_estimators=30, max_depth=15, min_samples_leaf=1,
 #             min_samples_split=5, max_features='log2' (codificado como 1).
@@ -65,11 +65,11 @@ PHASE1_CV_ACCURACY = 0.7867
 # Estrutura de indivíduo
 # ---------------------------------------------------------------------------
 class Individual(list):
-    """Cromossomo do AG: lista de 5 genes inteiros representando os hiperparâmetros
+    """Indivíduo do AG: lista de 5 genes inteiros representando os hiperparâmetros
     do RandomForestClassifier, com atributo `fitness` associado.
 
     Herda de `list` para que os operadores genéticos (crossover, mutação)
-    possam indexar e fatiar o cromossomo diretamente, seguindo a mesma
+    possam indexar e fatiar o indivíduo diretamente, seguindo a mesma
     interface da biblioteca DEAP.
 
     Genes (índice → hiperparâmetro → tipo — intervalo):
@@ -119,7 +119,7 @@ def create_seeded_pop(n_pop: int) -> list[Individual]:
     """Cria a população inicial com elitismo de semente.
 
     Todos os indivíduos são gerados aleatoriamente, exceto o primeiro, que
-    recebe o cromossomo GRIDSEARCH_SEED — a melhor solução encontrada pelo
+    recebe o indivíduo GRIDSEARCH_SEED — a melhor solução encontrada pelo
     GridSearch na Fase 1. Essa estratégia garante que o AG parta de um ponto
     já sabidamente competitivo, reduzindo o tempo até a convergência.
 
@@ -151,7 +151,7 @@ def evaluate(individual: Individual, X, y) -> float:
 
     Parâmetros
     ----------
-    individual : Individual — cromossomo com os 5 genes de hiperparâmetros
+    individual : Individual — indivíduo com os 5 genes de hiperparâmetros
     X          : array-like — features de treino
     y          : array-like — rótulos de treino
 
@@ -185,7 +185,7 @@ def crossover(ind1: Individual, ind2: Individual) -> tuple[Individual, Individua
     entre os dois indivíduos in-place. O algoritmo garante cx1 < cx2 mesmo
     quando os pontos saem fora de ordem.
 
-    Exemplo com cromossomo de tamanho 5 e cortes em 1 e 3:
+    Exemplo com indivíduo de tamanho 5 e cortes em 1 e 3:
         pai1: [A, B, C, D, E]      pai2: [a, b, c, d, e]
               ↕ troca [1:3) ↕
         filho1: [A, b, c, D, E]   filho2: [a, B, C, d, e]
@@ -213,7 +213,7 @@ def mutate(individual: Individual, mut_indpb: float = MUT_INDPB) -> tuple[Indivi
     um inteiro sorteado uniformemente dentro dos limites GENE_LOW[i]–GENE_HIGH[i].
     O gene é modificado in-place; o fitness é invalidado (→ None) pelo chamador.
 
-    Com mut_indpb = 0.5 e cromossomo de 5 genes, em média 2–3 genes são
+    Com mut_indpb = 0.5 e indivíduo de 5 genes, em média 2–3 genes são
     alterados a cada aplicação do operador.
     """
     for i in range(len(individual)):
@@ -348,7 +348,7 @@ def run_ga(
 
     Retorna
     -------
-    Individual — cromossomo com o maior fitness observado em toda a execução
+    Individual — indivíduo com o maior fitness observado em toda a execução
     """
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)

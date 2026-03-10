@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.ga_handmade import (
     CX_PB,
+    MUT_INDPB,
     MUT_PB,
     Individual,
     crossover,
@@ -85,7 +86,7 @@ print(SEP)
 # PASSO 0 — População inicial
 # ---------------------------------------------------------------------------
 print("\n  PASSO 0 — População inicial")
-print(f"  {'#':<4} {'Fitness':<10}  Cromossomo")
+print(f"  {'#':<4} {'Fitness':<10}  Indivíduo")
 print("  " + SEP_THIN)
 for i, ind in enumerate(POPULATION):
     best_marker = "  ← melhor" if ind.fitness == max(p.fitness for p in POPULATION) else "" # type: ignore[arg-type]
@@ -101,7 +102,7 @@ print(SEP)
 
 parents = [copy.copy(ind) for ind in selection(POPULATION, k=len(POPULATION))]
 
-print(f"\n  {'#':<4} {'Fitness':<10}  Cromossomo  (pais selecionados)")
+print(f"\n  {'#':<4} {'Fitness':<10}  Indivíduo  (pais selecionados)")
 print("  " + SEP_THIN)
 for i, ind in enumerate(parents):
     print(f"  {i:<4} {ind.fitness:<10.4f}  {_fmt(ind)}")
@@ -150,9 +151,9 @@ print(f"\n  Total de crossovers aplicados: {n_crossovers} de {len(offspring)//2}
 # PASSO 3 — Mutação individual
 # ---------------------------------------------------------------------------
 print(f"\n{SEP}")
-print(f"  PASSO 3 — Mutação Uniforme Inteira  (MUT_PB={MUT_PB}, MUT_INDPB=0.5)")
+print(f"  PASSO 3 — Mutação Uniforme Inteira  (MUT_PB={MUT_PB}, MUT_INDPB={MUT_INDPB})")
 print(f"  Cada filho tem {int(MUT_PB*100)}% de chance de sofrer mutação;")
-print(f"  se mutado, cada gene é alterado individualmente com 50% de chance.")
+print(f"  se mutado, cada gene é alterado individualmente com {int(MUT_INDPB*100)}% de chance.")
 print(f"  Genes marcados com (*) foram mutados.")
 print(SEP)
 
@@ -162,7 +163,7 @@ for i, ind in enumerate(offspring):
     aplicou = random.random() < MUT_PB
 
     if aplicou:
-        mutate(ind)
+        mutate(ind, mut_indpb=MUT_INDPB)
         ind.fitness = None
         n_mutations += 1
         changed = [GENE_LABELS[j] for j in range(5) if ind[j] != genes_before[j]]

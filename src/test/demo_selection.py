@@ -59,7 +59,7 @@ print("=" * 72)
 # Parte 1 — Exibe a população com os fitness
 # ---------------------------------------------------------------------------
 print("\n  População inicial:")
-print(f"  {'#':<4} {'Fitness':<10}  Cromossomo")
+print(f"  {'#':<4} {'Fitness':<10}  Indivíduo")
 print("  " + "-" * 68)
 for i, ind in enumerate(POPULATION):
     marker = "  ← melhor" if ind.fitness == max(p.fitness for p in POPULATION) else "" # type: ignore[arg-type]
@@ -75,7 +75,7 @@ print("=" * 72)
 random.seed(42)
 chosen = selection(POPULATION, k=len(POPULATION))
 
-print(f"\n  {'#':<4} {'Fitness':<10}  Cromossomo")
+print(f"\n  {'#':<4} {'Fitness':<10}  Indivíduo")
 print("  " + "-" * 68)
 for i, ind in enumerate(chosen):
     print(f"  {i:<4} {ind.fitness:<10.4f}  {_fmt(ind)}")

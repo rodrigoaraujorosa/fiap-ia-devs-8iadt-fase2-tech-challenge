@@ -66,7 +66,7 @@ print("=" * 72)
 for idx, (genes, seed) in enumerate(EXAMPLES, 1):
     random.seed(seed)
     ind = Individual(genes[:])
-    mutate(ind)
+    mutate(ind, mut_indpb=MUT_INDPB)
 
     changed = _changed_genes(genes, ind)
     changed_str = ", ".join(changed) if changed else "nenhum gene alterado"
