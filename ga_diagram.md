@@ -1,6 +1,6 @@
 # Diagrama do Algoritmo Genético
 
-Fluxo completo da execução do AG para otimização de hiperparâmetros do `RandomForestClassifier`.
+Critério de parada: `cv_acc > target_cv`, onde `target_cv = PHASE1_CV_ACCURACY × (1 + target_improvement)`.
 
 ```mermaid
 flowchart TD
@@ -8,12 +8,12 @@ flowchart TD
     B --> C[Injetar semente GridSearch<br/>melhor resultado Fase 1]
     C --> D[Avaliar fitness de todos<br/>CV 5-fold: mean − 0.1·std]
 
-    D --> E{fitness_melhor<br/>> 0.7867?}
+    D --> E{fitness_melhor<br/>> target_cv?}
     E -- Sim --> Z([Retornar melhor indivíduo])
 
     E -- Não --> F[Seleção por Torneio<br/>tournsize=3, k=n_pop]
-    F --> G[Crossover de dois pontos<br/>CX_PB=0.5 por par]
-    G --> H[Mutação uniforme inteira<br/>MUT_PB=0.4 · MUT_INDPB=0.5]
+    F --> G[Crossover de dois pontos<br/>CX_PB=0.7 por par]
+    G --> H[Mutação uniforme inteira<br/>MUT_PB=0.6 · MUT_INDPB=0.5]
     H --> I[Avaliar filhos modificados<br/>fitness == None]
     I --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
     J --> K[Exibir geração atual<br/>log de progresso]
@@ -38,13 +38,15 @@ $$\text{fitness} = \overline{\text{CV}} - 0.1 \times \sigma_{\text{CV}}$$
 
 Penalizar o desvio padrão premia modelos acurados e estáveis entre os folds.
 
-## Parâmetros do AG
+## Parâmetros Padrão do AG
 
 | Parâmetro    | Valor | Descrição                                          |
 |--------------|-------|----------------------------------------------------|
-| `n_pop`      | 20    | Tamanho da população (padrão)                      |
-| `CX_PB`      | 0.5   | Probabilidade de crossover entre dois indivíduos   |
-| `MUT_PB`     | 0.4   | Probabilidade de um indivíduo sofrer mutação       |
-| `MUT_INDPB`  | 0.5   | Probabilidade de mutar cada gene individualmente   |
-| `tournsize`  | 3     | Candidatos por torneio na seleção                  |
-| Meta CV      | 0.7867 | Acurácia CV 5-fold do GridSearch da Fase 1        |
+| `n_pop`              | 10     | Tamanho da população (padrão)                                              |
+| `CX_PB`              | 0.7    | Probabilidade de crossover entre dois indivíduos                           |
+| `MUT_PB`             | 0.6    | Probabilidade de um indivíduo sofrer mutação                               |
+| `MUT_INDPB`          | 0.5    | Probabilidade de mutar cada gene individualmente                           |
+| `tournsize`          | 3      | Candidatos por torneio na seleção                                          |
+| `target_improvement` | 0.0    | Melhoria % desejada sobre a meta base (0.0 = apenas superar 0.7867)       |
+| Meta base (CV)       | 0.7867 | Acurácia CV 5-fold do GridSearch da Fase 1                                 |
+| `target_cv`          | dinâmica | `PHASE1_CV_ACCURACY × (1 + target_improvement)` — critério de parada    |

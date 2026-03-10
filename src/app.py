@@ -68,8 +68,11 @@ def pop_to_df(population: list[Individual]) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("#").sort_values("fitness", ascending=False)
 
 
-def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int):
+def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int, target_improvement: float = 0.10):
     """Gerador: produz estatísticas da população após cada geração."""
+    # Meta dinâmica calculada a partir do percentual de melhoria desejado
+    target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
+
     population = create_seeded_pop(n_pop)
     for ind in population:
         ind.fitness = evaluate(ind, X_train, y_train)
@@ -82,6 +85,7 @@ def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int):
         "best_ind": copy.copy(best_ind),
         "best_fitness": float(best_ind.fitness),  # type: ignore[arg-type]
         "mean_fitness": sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
+        "target_cv": target_cv,
         "done": False,
     }
 
@@ -92,7 +96,7 @@ def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int):
         if current_best.fitness > best_ind.fitness:  # type: ignore[operator]
             best_ind = copy.copy(current_best)
 
-        done = round(float(best_ind.fitness), 4) > PHASE1_CV_ACCURACY  # type: ignore[arg-type]
+        done = round(float(best_ind.fitness), 4) > target_cv  # type: ignore[arg-type]
 
         yield {
             "gen": gen,
@@ -100,6 +104,7 @@ def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int):
             "best_ind": copy.copy(best_ind),
             "best_fitness": float(best_ind.fitness),  # type: ignore[arg-type]
             "mean_fitness": sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
+            "target_cv": target_cv,
             "done": done,
         }
 
@@ -113,8 +118,8 @@ st.title("🧬 Algoritmo Genético — Otimização de RandomForest")
 st.markdown(
     "Acompanhe em **tempo real** a evolução dos hiperparâmetros do "
     "**RandomForestClassifier** para o dataset de diabetes (Pima Indians).  \n"
-    f"**Meta:** superar o CV 5-fold de **{PHASE1_CV_ACCURACY:.4f}** "
-    "obtido pelo GridSearch na Fase 1."
+    f"**Meta base (GridSearch Fase 1):** CV 5-fold = **{PHASE1_CV_ACCURACY:.4f}**. "
+    "Defina no painel lateral o percentual de melhoria desejado."
 )
 
 # --------------------------------------------------------------------------------
@@ -128,10 +133,15 @@ with st.sidebar:
     max_gen = st.slider(
         "Máx. gerações", min_value=20, max_value=300, value=100, step=20
     )
+    target_improvement = st.slider(
+        "Melhoria alvo (%)", min_value=0, max_value=30, value=0, step=1,
+        help=f"Percentual acima de {PHASE1_CV_ACCURACY:.4f} (GridSearch Fase 1) que o AG deve atingir.",
+    ) / 100.0
+    target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
     st.divider()
     st.info(
-        f"**Meta:** CV acc > **{PHASE1_CV_ACCURACY:.4f}**  \n"
-        "*(GridSearch — Fase 1)*"
+        f"**Meta base:** {PHASE1_CV_ACCURACY:.4f} *(GridSearch — Fase 1)*  \n"
+        f"**Meta atual:** CV acc > **{target_cv:.4f}** (+{target_improvement*100:.0f}%)"
     )
     start = st.button("▶ Iniciar AG", type="primary", width="stretch")
 
@@ -177,7 +187,7 @@ if start:
     gen_idx:   list[int]   = []
     last_stats: dict | None = None
 
-    for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen):
+    for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement):
         last_stats = stats
         gen      = stats["gen"]
         best_fit = stats["best_fitness"]
@@ -189,22 +199,27 @@ if start:
         hist_mean.append(round(mean_fit, 4))
 
         # Métricas ao vivo
-        delta = round(best_fit - PHASE1_CV_ACCURACY, 4)
+        target_cv = stats["target_cv"]
+        delta = round(best_fit - target_cv, 4)
         ph_gen.metric("Geração", gen)
-        ph_best.metric("Melhor CV acc", f"{best_fit:.4f}", delta=f"{delta:+.4f}")
+        ph_best.metric("Melhor CV acc", f"{best_fit:.4f}", delta=f"{delta:+.4f}",
+                       help=f"Meta: > {target_cv:.4f}")
         ph_mean.metric("CV acc médio", f"{mean_fit:.4f}")
         ph_status.metric(
             "Status",
             "✅ Meta atingida!" if stats["done"] else "🔄 Evoluindo…",
         )
 
-        # Gráfico de convergência
+        # Linha de meta no gráfico: regra horizontal em target_cv
         chart_df = (
             pd.DataFrame(
                 {"Geração": gen_idx, "Melhor fitness": hist_best, "Fitness médio": hist_mean}
             )
             .melt("Geração", var_name="Métrica", value_name="CV acc")
         )
+        rule = alt.Chart(pd.DataFrame({"meta": [target_cv]})).mark_rule(
+            color="orange", strokeDash=[6, 3], strokeWidth=1.5
+        ).encode(y=alt.Y("meta:Q"))
         chart = (
             alt.Chart(chart_df)
             .mark_line()
@@ -213,9 +228,8 @@ if start:
                 y=alt.Y("CV acc:Q", scale=alt.Scale(zero=False), axis=alt.Axis(format=".4f")),
                 color="Métrica:N",
             )
-            .properties(height=280)
         )
-        ph_chart.altair_chart(chart, width="stretch")
+        ph_chart.altair_chart((chart + rule).properties(height=280), width="stretch")
 
         # Parâmetros do melhor indivíduo
         params = decode(best_ind)
@@ -250,12 +264,12 @@ if start:
         if last_stats["done"]:
             st.success(
                 f"🏆 Meta superada na geração **{gen}**! "
-                f"CV acc: **{best_fit:.4f}** > {PHASE1_CV_ACCURACY:.4f}"
+                f"CV acc: **{best_fit:.4f}** > {last_stats['target_cv']:.4f}"
             )
         else:
             st.warning(
                 f"⚠️ Limite de gerações atingido ({max_gen}). "
-                f"Melhor CV acc: **{best_fit:.4f}**"
+                f"Melhor CV acc: **{best_fit:.4f}** (meta: {last_stats['target_cv']:.4f})"
             )
 
         st.subheader("📊 Avaliação no conjunto de teste")

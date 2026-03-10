@@ -307,7 +307,7 @@ def _gen_loop(
     return offspring
 
 
-def run_ga(X_train, y_train, n_pop: int = 10) -> Individual:
+def run_ga(X_train, y_train, n_pop: int = 10, target_improvement: float = 0.0) -> Individual:
     """Ponto de entrada do AG: executa o ciclo evolutivo até atingir a meta de acurácia.
 
     Fluxo principal
@@ -315,7 +315,7 @@ def run_ga(X_train, y_train, n_pop: int = 10) -> Individual:
     1. Inicialização — cria população com semente do GridSearch + indivíduos aleatórios.
     2. Avaliação inicial — calcula o fitness de toda a população (1 vez, antes do loop).
     3. Loop geracional — repete _gen_loop() e atualiza o melhor indivíduo global
-       até que cv_acc > PHASE1_CV_ACCURACY ou o usuário interrompa com Ctrl+C.
+       até que cv_acc > target_cv ou o usuário interrompa com Ctrl+C.
 
     O melhor indivíduo global (best_ind) é mantido fora da população corrente:
     mesmo que gerações futuras percam diversidade, o melhor resultado já visto
@@ -323,14 +323,19 @@ def run_ga(X_train, y_train, n_pop: int = 10) -> Individual:
 
     Parâmetros
     ----------
-    X_train : array-like — features de treino
-    y_train : array-like — rótulos de treino
-    n_pop   : int        — tamanho da população (padrão 10)
+    X_train            : array-like — features de treino
+    y_train            : array-like — rótulos de treino
+    n_pop              : int        — tamanho da população (padrão 10)
+    target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
+                                      ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
 
     Retorna
     -------
     Individual — cromossomo com o maior fitness observado em toda a execução
     """
+    # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
+    target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
+
     population = create_seeded_pop(n_pop)
 
     # Avaliação inicial: todos os indivíduos precisam de fitness antes do 1º torneio
@@ -354,13 +359,13 @@ def run_ga(X_train, y_train, n_pop: int = 10) -> Individual:
             cv_acc    = round(best_ind.fitness, 4)  # type: ignore[arg-type]
             feat_name = "sqrt" if best_ind[4] == 0 else "log2"
             print(
-                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f}"
+                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f} (meta: {target_cv:.4f})"
                 f" | n_estimators={best_ind[0]} max_depth={best_ind[1]}"
                 f" min_samples_leaf={best_ind[2]} min_samples_split={best_ind[3]} max_features={feat_name}"
             )
-            # Critério de parada: meta de acurácia da Fase 1 superada
-            if cv_acc > PHASE1_CV_ACCURACY:
-                print(f"      Meta superada na geração {gen} (CV: {cv_acc:.4f} > {PHASE1_CV_ACCURACY})")
+            # Critério de parada: meta dinâmica superada
+            if cv_acc > target_cv:
+                print(f"      Meta superada na geração {gen} (CV: {cv_acc:.4f} > {target_cv:.4f})")
                 break
     except KeyboardInterrupt:
         # Interrupção manual: retorna o melhor indivíduo encontrado até o momento

@@ -124,19 +124,24 @@ def create_seeded_pop(n_pop):
     return pop
 
 
-def run_ga(X_train, y_train, n_pop=10):
-    """Executa o algoritmo genético geração a geração até superar PHASE1_CV_ACCURACY em CV 5-fold.
+def run_ga(X_train, y_train, n_pop=10, target_improvement: float = 0.0):
+    """Executa o algoritmo genético geração a geração até superar a meta de acurácia dinâmica.
 
     Parâmetros
     ----------
-    X_train : array-like  — features de treino
-    y_train : array-like  — rótulos de treino
-    n_pop   : int         — tamanho da população (padrão 10)
+    X_train            : array-like — features de treino
+    y_train            : array-like — rótulos de treino
+    n_pop              : int        — tamanho da população (padrão 10)
+    target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
+                                      ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
 
     Retorna
     -------
     hof[0] : Individual — cromossomo com maior fitness já visto
     """
+    # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
+    target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
+
     # Registra a função de aptidão com os dados de treino via closure
     toolbox.register("evaluate", evaluate, X=X_train, y=y_train)
 
@@ -161,7 +166,7 @@ def run_ga(X_train, y_train, n_pop=10):
     # Hall of Fame: armazena o melhor indivíduo de todas as gerações
     hof = tools.HallOfFame(1)
 
-    # Loop geracional sem limite fixo: encerra ao superar a média CV 5-fold do Tech Challenge da Fase 1
+    # Loop geracional sem limite fixo: encerra ao superar a meta dinâmica
     gen = 0
     try:
         while True:
@@ -174,12 +179,12 @@ def run_ga(X_train, y_train, n_pop=10):
             cv_acc   = round(best_ind.fitness.values[0], 4)
             feat_name = "sqrt" if best_ind[4] == 0 else "log2"
             print(
-                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f}"
+                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f} (meta: {target_cv:.4f})"
                 f" | n_estimators={best_ind[0]} max_depth={best_ind[1]}"
                 f" min_samples_leaf={best_ind[2]} min_samples_split={best_ind[3]} max_features={feat_name}"
             )
-            if cv_acc > PHASE1_CV_ACCURACY:
-                print(f"      Meta superada na geração {gen} (CV: {cv_acc:.4f} > {PHASE1_CV_ACCURACY})")
+            if cv_acc > target_cv:
+                print(f"      Meta superada na geração {gen} (CV: {cv_acc:.4f} > {target_cv:.4f})")
                 break
     except KeyboardInterrupt:
         print(f"\n      Interrompido na geração {gen}. Retornando melhor indivíduo encontrado até agora.")

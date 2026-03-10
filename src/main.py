@@ -19,6 +19,9 @@ ALGORITHMS = {
     "ga_deap":     ("engine.ga_deap",     "DEAP"),
 }
 
+# Acurácia CV 5-fold obtida pelo GridSearch na Fase 1 (valor de referência)
+PHASE1_CV_ACCURACY = 0.7867
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -35,6 +38,13 @@ def parse_args():
         default=10,
         metavar="N",
         help="Tamanho da população (padrão: 10).",
+    )
+    parser.add_argument(
+        "--target_improvement",
+        type=float,
+        default=0.0,
+        metavar="P",
+        help="Melhoria percentual desejada sobre a meta base (padrão: 0.0 = sem melhoria, apenas superar PHASE1_CV_ACCURACY).",
     )
     return parser.parse_args()
 
@@ -83,10 +93,10 @@ def main():
     X_train, X_test, y_train, y_test = load_data(DATA_PATH)
     print(f"      Treino: {X_train.shape[0]} amostras | Teste: {X_test.shape[0]} amostras")
 
-    print(f"\n[2/4] Executando AG (população={args.n_pop}, até superar CV 5-fold de 78,67 %)...")
+    print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta={PHASE1_CV_ACCURACY*(1+args.target_improvement):.4f})...")
     t0 = time.time()
     try:
-        best = run_ga(X_train, y_train, n_pop=args.n_pop)
+        best = run_ga(X_train, y_train, n_pop=args.n_pop, target_improvement=args.target_improvement)
     except KeyboardInterrupt:
         print("\n      Execução cancelada pelo usuário.")
         return
