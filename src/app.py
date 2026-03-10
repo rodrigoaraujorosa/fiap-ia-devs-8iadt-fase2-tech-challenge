@@ -68,7 +68,7 @@ def pop_to_df(population: list[Individual]) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("#").sort_values("fitness", ascending=False)
 
 
-def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int, target_improvement: float = 0.10):
+def run_ga_streaming(X_train, y_train, n_pop: int, max_gen: int, target_improvement: float = 0.0):
     """Gerador: produz estatísticas da população após cada geração."""
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
@@ -134,14 +134,14 @@ with st.sidebar:
         "Máx. gerações", min_value=20, max_value=300, value=100, step=20
     )
     target_improvement = st.slider(
-        "Melhoria alvo (%)", min_value=0, max_value=30, value=0, step=1,
+        "Melhoria alvo (%)", min_value=0.0, max_value=30.0, value=0.0, step=0.5,
         help=f"Percentual acima de {PHASE1_CV_ACCURACY:.4f} (GridSearch Fase 1) que o AG deve atingir.",
     ) / 100.0
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
     st.divider()
     st.info(
         f"**Meta base:** {PHASE1_CV_ACCURACY:.4f} *(GridSearch — Fase 1)*  \n"
-        f"**Meta atual:** CV acc > **{target_cv:.4f}** (+{target_improvement*100:.0f}%)"
+        f"**Meta atual:** CV accuracy > **{target_cv:.4f}** (+{target_improvement*100:.1f}%)"
     )
     start = st.button("▶ Iniciar AG", type="primary", width="stretch")
 
@@ -155,8 +155,8 @@ ph_mean   = c3.empty()
 ph_status = c4.empty()
 
 ph_gen.metric("Geração", "—")
-ph_best.metric("Melhor CV acc", "—", help=f"Meta: > {PHASE1_CV_ACCURACY:.4f}")
-ph_mean.metric("CV acc médio", "—")
+ph_best.metric("Melhor CV accuracy", "—", help=f"Meta: > {PHASE1_CV_ACCURACY:.4f}")
+ph_mean.metric("CV accuracy médio", "—")
 ph_status.metric("Status", "Aguardando")
 
 # --------------------------------------------------------------------------------
@@ -202,20 +202,22 @@ if start:
         target_cv = stats["target_cv"]
         delta = round(best_fit - target_cv, 4)
         ph_gen.metric("Geração", gen)
-        ph_best.metric("Melhor CV acc", f"{best_fit:.4f}", delta=f"{delta:+.4f}",
+        ph_best.metric("Melhor CV accuracy", f"{best_fit:.4f}", delta=f"{delta:+.4f}",
                        help=f"Meta: > {target_cv:.4f}")
-        ph_mean.metric("CV acc médio", f"{mean_fit:.4f}")
-        ph_status.metric(
-            "Status",
-            "✅ Meta atingida!" if stats["done"] else "🔄 Evoluindo…",
-        )
+        ph_mean.metric("CV accuracy médio", f"{mean_fit:.4f}")
+        with ph_status.container():
+            if stats["done"]:
+                st.metric("Status", "✅ Meta atingida!")
+                st.caption(f"Superou CV accuracy > {target_cv:.4f} (+{target_improvement*100:.0f}%)")
+            else:
+                st.metric("Status", "🔄 Evoluindo…")
 
         # Linha de meta no gráfico: regra horizontal em target_cv
         chart_df = (
             pd.DataFrame(
                 {"Geração": gen_idx, "Melhor fitness": hist_best, "Fitness médio": hist_mean}
             )
-            .melt("Geração", var_name="Métrica", value_name="CV acc")
+            .melt("Geração", var_name="Métrica", value_name="CV accuracy")
         )
         rule = alt.Chart(pd.DataFrame({"meta": [target_cv]})).mark_rule(
             color="orange", strokeDash=[6, 3], strokeWidth=1.5
@@ -225,7 +227,7 @@ if start:
             .mark_line()
             .encode(
                 x=alt.X("Geração:Q", axis=alt.Axis(tickMinStep=1, format="d")),
-                y=alt.Y("CV acc:Q", scale=alt.Scale(zero=False), axis=alt.Axis(format=".4f")),
+                y=alt.Y("CV accuracy:Q", scale=alt.Scale(zero=False), axis=alt.Axis(format=".4f")),
                 color="Métrica:N",
             )
         )
@@ -245,7 +247,7 @@ if start:
             width="stretch",
             column_config={
                 "fitness": st.column_config.ProgressColumn(
-                    "Fitness (CV acc)",
+                    "Fitness (CV accuracy)",
                     min_value=0.60,
                     max_value=0.92,
                     format="%.4f",
@@ -261,10 +263,24 @@ if start:
         best_fit = last_stats["best_fitness"]
         gen      = last_stats["gen"]
 
+        # Atualiza o status final: considera "meta atingida" se superou ao menos PHASE1_CV_ACCURACY
+        if last_stats["done"]:
+            with ph_status.container():
+                st.metric("Status", "✅ Meta atingida!")
+                st.caption(f"Superou CV accuracy > {last_stats['target_cv']:.4f} (+{target_improvement*100:.0f}%)")
+        elif best_fit > PHASE1_CV_ACCURACY:
+            with ph_status.container():
+                st.metric("Status", "📈 Meta alvo não atingida!")
+                st.caption(f"Mas superou a meta base ({PHASE1_CV_ACCURACY:.4f})")
+        else:
+            with ph_status.container():
+                st.metric("Status", "❌ Meta não atingida!")
+                st.caption(f"Não superou CV accuracy")
+
         if last_stats["done"]:
             st.success(
                 f"🏆 Meta superada na geração **{gen}**! "
-                f"CV acc: **{best_fit:.4f}** > {last_stats['target_cv']:.4f}"
+                f"CV accuracy: **{best_fit:.4f}** > {last_stats['target_cv']:.4f}"
             )
         else:
             st.warning(
@@ -281,7 +297,7 @@ if start:
 
         r1, r2 = st.columns(2)
         r1.metric("Acurácia no teste", f"{test_acc:.4f}")
-        r2.metric("CV acc (treino)", f"{best_fit:.4f}")
+        r2.metric("CV accuracy (treino)", f"{best_fit:.4f}")
 
         report = classification_report(
             y_test,
