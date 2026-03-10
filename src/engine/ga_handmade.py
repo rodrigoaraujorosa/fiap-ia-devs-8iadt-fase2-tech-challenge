@@ -307,7 +307,7 @@ def _gen_loop(
     return offspring
 
 
-def run_ga(X_train, y_train, n_pop: int = 20) -> Individual:
+def run_ga(X_train, y_train, n_pop: int = 10) -> Individual:
     """Ponto de entrada do AG: executa o ciclo evolutivo até atingir a meta de acurácia.
 
     Fluxo principal
@@ -325,7 +325,7 @@ def run_ga(X_train, y_train, n_pop: int = 20) -> Individual:
     ----------
     X_train : array-like — features de treino
     y_train : array-like — rótulos de treino
-    n_pop   : int        — tamanho da população (padrão 20)
+    n_pop   : int        — tamanho da população (padrão 10)
 
     Retorna
     -------

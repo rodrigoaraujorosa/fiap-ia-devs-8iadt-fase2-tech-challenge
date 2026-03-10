@@ -32,9 +32,9 @@ def parse_args():
     parser.add_argument(
         "--n_pop",
         type=int,
-        default=20,
+        default=10,
         metavar="N",
-        help="Tamanho da população (padrão: 20).",
+        help="Tamanho da população (padrão: 10).",
     )
     return parser.parse_args()
 

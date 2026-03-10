@@ -123,7 +123,7 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Parâmetros do AG")
     n_pop = st.slider(
-        "Tamanho da população", min_value=10, max_value=50, value=20, step=5
+        "Tamanho da população", min_value=10, max_value=50, value=10, step=5
     )
     max_gen = st.slider(
         "Máx. gerações", min_value=20, max_value=300, value=100, step=20

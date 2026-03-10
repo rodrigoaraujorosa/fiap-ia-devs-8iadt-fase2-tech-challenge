@@ -124,14 +124,14 @@ def create_seeded_pop(n_pop):
     return pop
 
 
-def run_ga(X_train, y_train, n_pop=20):
+def run_ga(X_train, y_train, n_pop=10):
     """Executa o algoritmo genético geração a geração até superar PHASE1_CV_ACCURACY em CV 5-fold.
 
     Parâmetros
     ----------
     X_train : array-like  — features de treino
     y_train : array-like  — rótulos de treino
-    n_pop   : int         — tamanho da população (padrão 20)
+    n_pop   : int         — tamanho da população (padrão 10)
 
     Retorna
     -------
