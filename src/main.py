@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import time
@@ -9,11 +10,33 @@ from sklearn.metrics import accuracy_score, classification_report
 # Garante que o módulo engine seja encontrado ao rodar direto de src/ ou da raiz
 sys.path.insert(0, os.path.dirname(__file__))
 
-from engine.ga_deap import run_ga
-
 DATA_PATH = os.path.join(
     os.path.dirname(__file__), "..", "data", "processed", "diabetes_treated.csv"
 )
+
+ALGORITHMS = {
+    "ga_handmade": ("engine.ga_handmade", "Handmade"),
+    "ga_deap":     ("engine.ga_deap",     "DEAP"),
+}
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Otimização de hiperparâmetros de RandomForest via Algoritmo Genético."
+    )
+    parser.add_argument(
+        "algorithm",
+        choices=ALGORITHMS.keys(),
+        help="Implementação do AG a executar: 'ga_handmade' ou 'ga_deap'.",
+    )
+    parser.add_argument(
+        "--n_pop",
+        type=int,
+        default=20,
+        metavar="N",
+        help="Tamanho da população (padrão: 20).",
+    )
+    return parser.parse_args()
 
 
 def load_data(path: str):
@@ -33,19 +56,37 @@ def decode_individual(ind):
     }
 
 
+def get_fitness(best, algorithm: str) -> float:
+    """Normaliza o acesso ao fitness entre as duas implementações.
+    - ga_handmade: best.fitness            (float simples)
+    - ga_deap:     best.fitness.values[0]  (objeto Fitness do DEAP)
+    """
+    if algorithm == "ga_deap":
+        return best.fitness.values[0]
+    return float(best.fitness)
+
+
 def main():
+    args = parse_args()
+    module_path, label = ALGORITHMS[args.algorithm]
+
+    # Importação dinâmica do módulo escolhido
+    import importlib
+    ga_module = importlib.import_module(module_path)
+    run_ga = ga_module.run_ga
+
     print("=" * 60)
-    print("  Algoritmo Genético — Otimização de RandomForest - DEAP")
+    print(f"  Algoritmo Genético — Otimização de RandomForest ({label})")
     print("=" * 60)
 
     print("\n[1/4] Carregando dados...")
     X_train, X_test, y_train, y_test = load_data(DATA_PATH)
     print(f"      Treino: {X_train.shape[0]} amostras | Teste: {X_test.shape[0]} amostras")
 
-    print("\n[2/4] Executando AG (população=20, até superar CV 5-fold de 78,67 %)...")
+    print(f"\n[2/4] Executando AG (população={args.n_pop}, até superar CV 5-fold de 78,67 %)...")
     t0 = time.time()
     try:
-        best = run_ga(X_train, y_train, n_pop=20)
+        best = run_ga(X_train, y_train, n_pop=args.n_pop)
     except KeyboardInterrupt:
         print("\n      Execução cancelada pelo usuário.")
         return
@@ -56,7 +97,7 @@ def main():
     params = decode_individual(best)
     for k, v in params.items():
         print(f"      {k}: {v}")
-    print(f"      Fitness (CV acc): {best.fitness.values[0]:.4f}")
+    print(f"      Fitness (CV acc): {get_fitness(best, args.algorithm):.4f}")
 
     print("\n[4/4] Avaliando no conjunto de teste...")
     clf = RandomForestClassifier(**params, random_state=42, n_jobs=-1)
