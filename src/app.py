@@ -71,6 +71,77 @@ def pop_to_df(population: list[Individual]) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("#").sort_values("fitness", ascending=False)
 
 
+def ind_to_bar_chart(ind: Individual) -> alt.Chart:
+    """Barra horizontal com 5 células coloridas, uma por gene do indivíduo."""
+    genes = [
+        {"gene": "n_estimators",    "abrev": "n_est",  "norm": (ind[0] - 20) / (60 - 20),  "detalhe": str(ind[0])},
+        {"gene": "max_depth",       "abrev": "depth",  "norm": (ind[1] - 5)  / (25 - 5),   "detalhe": str(ind[1])},
+        {"gene": "min_s_leaf",      "abrev": "leaf",   "norm": (ind[2] - 1)  / (10 - 1),   "detalhe": str(ind[2])},
+        {"gene": "min_s_split",     "abrev": "split",  "norm": (ind[3] - 2)  / (20 - 2),   "detalhe": str(ind[3])},
+        {"gene": "max_features",    "abrev": "feat",   "norm": float(ind[4]),               "detalhe": "log2" if ind[4] else "sqrt"},
+    ]
+    df = pd.DataFrame(genes)
+    df["linha"] = " "
+    order = [g["abrev"] for g in genes]
+    return (
+        alt.Chart(df)
+        .mark_rect(stroke="white", strokeWidth=3)
+        .encode(
+            x=alt.X("abrev:N", sort=order, axis=alt.Axis(labelAngle=0, title=None)),
+            y=alt.Y("linha:N", axis=None),
+            color=alt.Color("norm:Q", scale=alt.Scale(scheme="blues", domain=[0, 1]), legend=None),
+            tooltip=[
+                alt.Tooltip("gene:N", title="Hiperparâmetro"),
+                alt.Tooltip("detalhe:N", title="Valor"),
+            ],
+        )
+        .properties(height=55)
+    )
+
+
+def make_explore_chart(df: pd.DataFrame) -> alt.VConcatChart:
+    """Dispersão dos hiperparâmetros explorados ao longo das gerações, colorido por fitness.
+
+    Usa vconcat em vez de facet para que use_container_width se aplique corretamente
+    e a legenda não vaze para fora do expander.
+    """
+    genes = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_split"]
+    color = alt.Color(
+        "fitness:Q",
+        scale=alt.Scale(scheme="viridis"),
+        legend=alt.Legend(title="Fitness CV"),
+    )
+    tooltip = [
+        alt.Tooltip("Geração:Q"),
+        alt.Tooltip("hiperparâmetro:N", title="Hiperparâmetro"),
+        alt.Tooltip("valor:Q", title="Valor"),
+        alt.Tooltip("fitness:Q", title="Fitness", format=".4f"),
+    ]
+
+    panels = []
+    for i, gene in enumerate(genes):
+        sub = df[["Geração", "fitness", gene]].rename(columns={gene: "valor"})
+        sub = sub.assign(hiperparâmetro=gene)
+        show_x = i == len(genes) - 1   # eixo X só no último painel
+        panel = (
+            alt.Chart(sub)
+            .mark_circle(size=50, opacity=0.65)
+            .encode(
+                x=alt.X(
+                    "Geração:Q",
+                    axis=alt.Axis(tickMinStep=1, format="d", title="Geração" if show_x else None, labels=show_x),
+                ),
+                y=alt.Y("valor:Q", title=gene),
+                color=color,
+                tooltip=tooltip,
+            )
+            .properties(height=110)
+        )
+        panels.append(panel)
+
+    return alt.vconcat(*panels, spacing=6).resolve_scale(color="shared")
+
+
 def run_ga_streaming(
     X_train, y_train,
     n_pop: int,
@@ -190,6 +261,7 @@ chart_col, params_col = st.columns([3, 1])
 ph_chart = chart_col.empty()
 with params_col:
     st.markdown("**🏅 Melhor indivíduo**")
+    ph_bar    = st.empty()
     ph_params = st.empty()
 
 st.divider()
@@ -200,6 +272,10 @@ st.divider()
 with st.expander("📋 População atual", expanded=True):
     ph_table = st.empty()
 
+with st.expander("🗺️ Exploração do espaço de busca", expanded=False):
+    st.caption("Cada ponto é um indivíduo avaliado. Cor = fitness CV (roxo=baixo, amarelo=alto).")
+    ph_explore = st.empty()
+
 # --------------------------------------------------------------------------------
 # Executa o AG e atualiza as métricas, gráfico, melhor indivíduo e tabela da população a cada geração
 # --------------------------------------------------------------------------------
@@ -209,6 +285,7 @@ if start:
     hist_best: list[float] = []
     hist_mean: list[float] = []
     gen_idx:   list[int]   = []
+    all_explore_df: list[pd.DataFrame] = []
     last_stats: dict | None = None
 
     for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement,
@@ -265,6 +342,7 @@ if start:
         ).T
         params_df.columns = ["Valor"]
         ph_params.dataframe(params_df, width="stretch")
+        ph_bar.altair_chart(ind_to_bar_chart(best_ind), width="stretch")
 
         # Tabela da população com barra de progresso no fitness
         ph_table.dataframe(
@@ -278,6 +356,20 @@ if start:
                     format="%.4f",
                 )
             },
+        )
+
+        # Exploração do espaço de busca: acumula todos os indivíduos desta geração
+        all_explore_df.append(pd.DataFrame([{
+            "Geração": gen,
+            "n_estimators": int(p[0]),
+            "max_depth": int(p[1]),
+            "min_samples_leaf": int(p[2]),
+            "min_samples_split": int(p[3]),
+            "fitness": round(float(p.fitness), 4) if p.fitness is not None else 0.0,
+        } for p in stats["population"]]))
+        ph_explore.altair_chart(
+            make_explore_chart(pd.concat(all_explore_df, ignore_index=True)),
+            width="stretch",
         )
 
     # --------------------------------------------------------------------------------
