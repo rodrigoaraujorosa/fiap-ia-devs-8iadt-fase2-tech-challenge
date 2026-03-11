@@ -201,7 +201,7 @@ st.markdown(
     "Acompanhe em **tempo real** a evolução dos hiperparâmetros do "
     "**RandomForestClassifier** para o dataset de diabetes (Pima Indians).  \n"
     f"**Meta base (GridSearch Fase 1):** CV 5-fold = **{PHASE1_CV_ACCURACY:.4f}**. "
-    "Defina no painel lateral o percentual de melhoria desejado."
+    "Defina no painel lateral o percentual de melhoria desejado para uma solução sub ótima."
 )
 
 # --------------------------------------------------------------------------------
@@ -250,7 +250,7 @@ ph_mean   = c3.empty()
 ph_status = c4.empty()
 
 ph_gen.metric("Geração", "—")
-ph_best.metric("Melhor CV accuracy", "—", help=f"Meta: > {PHASE1_CV_ACCURACY:.4f}")
+ph_best.metric("Melhor CV accuracy", "—", help=f"Meta (Solução sub ótima): > {PHASE1_CV_ACCURACY:.4f}")
 ph_mean.metric("CV accuracy médio", "—")
 ph_status.metric("Status", "Aguardando")
 

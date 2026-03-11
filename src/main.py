@@ -114,7 +114,7 @@ def main():
     X_train, X_test, y_train, y_test = load_data(DATA_PATH)
     print(f"      Treino: {X_train.shape[0]} amostras | Teste: {X_test.shape[0]} amostras")
 
-    print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta={PHASE1_CV_ACCURACY*(1+args.target_improvement):.4f})...")
+    print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta:>{PHASE1_CV_ACCURACY*(1+args.target_improvement):.4f})...")
     t0 = time.time()
     try:
         best = run_ga(

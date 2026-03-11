@@ -190,7 +190,7 @@ def run_ga(
             cv_acc   = round(best_ind.fitness.values[0], 4)
             feat_name = "sqrt" if best_ind[4] == 0 else "log2"
             print(
-                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f} (meta: {target_cv:.4f})"
+                f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f} (meta:>{target_cv:.4f})"
                 f" | n_estimators={best_ind[0]} max_depth={best_ind[1]}"
                 f" min_samples_leaf={best_ind[2]} min_samples_split={best_ind[3]} max_features={feat_name}"
             )
