@@ -56,8 +56,8 @@ toolbox = base.Toolbox()
 #   [0] n_estimators      — número de árvores          (inteiro, 20–60)
 #   [1] max_depth         — profundidade máxima         (categórico: 5,10,15,20,25)
 #   [2] min_samples_leaf  — mínimo de amostras por folha (inteiro, 1–10)
-#   [3] min_samples_split — mínimo para dividir nó      (inteiro, 2–20)
-#   [4] max_features      — critério de features        (binário: 0='sqrt', 1='log2')
+#   [3] min_samples_split — mínimo de amostras para dividir um nó interno (inteiro, 2–20)
+#   [4] max_features      — critério de features (variáveis)       (binário: 0='sqrt', 1='log2')
 # ---------------------------------------------------------------------------
 
 toolbox.register("attr_n_estimators", random.randint, N_ESTIMATORS_LOW, N_ESTIMATORS_HIGH)

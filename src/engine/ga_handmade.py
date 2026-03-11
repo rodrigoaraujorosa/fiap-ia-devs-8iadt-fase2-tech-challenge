@@ -76,8 +76,8 @@ class Individual(list):
         [0] n_estimators      — número de árvores          (int,  20–60)
         [1] max_depth         — profundidade máxima         (int,  5|10|15|20|25)
         [2] min_samples_leaf  — mínimo de amostras/folha    (int,  1–10)
-        [3] min_samples_split — mínimo de amostras p/ split (int,  2–20)
-        [4] max_features      — critério de features        (bin,  0='sqrt'|1='log2')
+        [3] min_samples_split — mínimo de amostras para dividir um nó interno (int,  2–20)
+        [4] max_features      — critério de features (variáveis)        (bin,  0='sqrt'|1='log2')
 
     Atributos:
         fitness: float | None — valor da função de aptidão; None indica que

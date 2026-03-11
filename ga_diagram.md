@@ -14,23 +14,22 @@ flowchart TD
     E -- Não --> F[Seleção por Torneio<br/>tournsize=3, k=n_pop]
     F --> G[Crossover de dois pontos<br/>cx_pb por par]
     G --> H[Mutação uniforme inteira<br/>mut_pb · mut_indpb por gene]
-    H --> I[Avaliar filhos modificados<br/>fitness == None]
-    I --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
-    J --> K[Exibir geração atual<br/>log de progresso]
-    K --> E
+    G --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
+    H --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
+    J --> E
 ```
 
 ## Indivíduo
 
 Cada indivíduo é uma lista de 5 genes que codificam os hiperparâmetros do modelo:
 
-| Gene | Hiperparâmetro       | Tipo       | Intervalo / Opções        |
-|------|----------------------|------------|---------------------------|
-| [0]  | `n_estimators`       | inteiro    | 20 – 60                   |
-| [1]  | `max_depth`          | categórico | 5, 10, 15, 20, 25         |
-| [2]  | `min_samples_leaf`   | inteiro    | 1 – 10                    |
-| [3]  | `min_samples_split`  | inteiro    | 2 – 20                    |
-| [4]  | `max_features`       | binário    | 0 = `sqrt`, 1 = `log2`    |
+| Gene | Hiperparâmetro       | Tipo       | Intervalo / Opções        | Descrição
+|------|----------------------|------------|---------------------------|------------------------------------------------------------------|
+| [0]  | `n_estimators`       | inteiro    | 20 – 60                   | Quantidade de árvores                                            |
+| [1]  | `max_depth`          | categórico | 5, 10, 15, 20, 25         | Profundidade máxima das árvores                                  |
+| [2]  | `min_samples_leaf`   | inteiro    | 1 – 10                    | Quantidade mínima de amostras por folhas                         |
+| [3]  | `min_samples_split`  | inteiro    | 2 – 20                    | Número mínimo de amostras necessárias para dividir um nó interno |
+| [4]  | `max_features`       | binário    | 0 = `sqrt`, 1 = `log2`    | Quantas variáveis considerar por divisão                         |
 
 ## Função de Fitness
 
