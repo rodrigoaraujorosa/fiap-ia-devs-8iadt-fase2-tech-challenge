@@ -1,11 +1,25 @@
-"""Visualização em tempo real do Algoritmo Genético (ga_handmade) com Streamlit.
+"""Interface Streamlit para visualização em tempo real do Algoritmo Genético (ga_handmade).
+
+Este módulo implementa o dashboard interativo que permite:
+- Configurar os parâmetros do AG (tamanho da população, gerações, probabilidades
+  de cruzamento e mutação) via sidebar;
+- Acompanhar a evolução do fitness geração a geração em gráficos ao vivo;
+- Inspecionar a população completa e a exploração do espaço de hiperparâmetros;
+- Avaliar o melhor indivíduo encontrado no conjunto de teste;
+- Exportar o modelo treinado em formato pickle e validar a integridade do arquivo salvo.
+
+O AG otimiza os hiperparâmetros de um RandomForestClassifier para o dataset de
+diabetes Pima Indians, usando como referência o CV accuracy obtido por GridSearch
+na Fase 1 do projeto (constante PHASE1_CV_ACCURACY importada de ga_handmade).
 
 Execute com:
     streamlit run src/app.py
 """
 import copy
 import os
+import pickle
 import sys
+from datetime import datetime
 
 import altair as alt
 import pandas as pd
@@ -45,6 +59,15 @@ DATA_PATH = os.path.join(
 # --------------------------------------------------------------------------------
 @st.cache_data
 def load_data() -> list:
+    """Carrega e divide o dataset de diabetes em treino e teste.
+
+    O resultado é cacheado pelo Streamlit para evitar releituras desnecessárias
+    entre re-renders da página.
+
+    Returns:
+        Tupla (X_train, X_test, y_train, y_test) com estratificação pela variável
+        alvo ``Outcome`` e semente fixa para reprodutibilidade.
+    """
     df = pd.read_csv(DATA_PATH)
     X = df.drop(columns=["Outcome"])
     y = df["Outcome"]
@@ -52,6 +75,21 @@ def load_data() -> list:
 
 
 def decode(ind: Individual) -> dict:
+    """Converte um indivíduo do AG no dicionário de hiperparâmetros do RandomForest.
+
+    Cada posição do cromossomo representa um hiperparâmetro:
+        [0] n_estimators   — número de árvores (inteiro)
+        [1] max_depth      — profundidade máxima de cada árvore (inteiro)
+        [2] min_samples_leaf  — mínimo de amostras por folha (inteiro)
+        [3] min_samples_split — mínimo de amostras para dividir um nó (inteiro)
+        [4] max_features   — critério de seleção de features: 0 → "sqrt", 1 → "log2"
+
+    Args:
+        ind: Indivíduo (cromossomo) retornado pelo AG.
+
+    Returns:
+        Dicionário pronto para ser passado como ``**kwargs`` ao RandomForestClassifier.
+    """
     return {
         "n_estimators": int(ind[0]),
         "max_depth": int(ind[1]),
@@ -62,6 +100,18 @@ def decode(ind: Individual) -> dict:
 
 
 def pop_to_df(population: list[Individual]) -> pd.DataFrame:
+    """Converte a população atual em um DataFrame ordenado por fitness decrescente.
+
+    Cada linha corresponde a um indivíduo com seus hiperparâmetros decodificados
+    e o valor de fitness (CV accuracy 5-fold).
+
+    Args:
+        population: Lista de indivíduos da geração atual.
+
+    Returns:
+        DataFrame indexado por posição (1-based), ordenado do melhor para o pior
+        indivíduo conforme o fitness.
+    """
     rows = []
     for i, ind in enumerate(population):
         row: dict = {"#": i + 1}
@@ -72,7 +122,17 @@ def pop_to_df(population: list[Individual]) -> pd.DataFrame:
 
 
 def ind_to_bar_chart(ind: Individual) -> alt.Chart:
-    """Barra horizontal com 5 células coloridas, uma por gene do indivíduo."""
+    """Gera um heatmap horizontal com uma célula colorida por gene do indivíduo.
+
+    Cada gene é normalizado para o intervalo [0, 1] dentro de seu domínio válido,
+    e a intensidade da cor azul reflete o valor relativo do gene.
+
+    Args:
+        ind: Indivíduo cujo cromossomo será visualizado.
+
+    Returns:
+        Gráfico Altair do tipo ``mark_rect`` com 5 colunas (uma por hiperparâmetro).
+    """
     genes = [
         {"gene": "n_estimators",    "abrev": "n_est",  "norm": (ind[0] - 20) / (60 - 20),  "detalhe": str(ind[0])},
         {"gene": "max_depth",       "abrev": "depth",  "norm": (ind[1] - 5)  / (25 - 5),   "detalhe": str(ind[1])},
@@ -100,10 +160,22 @@ def ind_to_bar_chart(ind: Individual) -> alt.Chart:
 
 
 def make_explore_chart(df: pd.DataFrame) -> alt.VConcatChart:
-    """Dispersão dos hiperparâmetros explorados ao longo das gerações, colorido por fitness.
+    """Gera gráfico de dispersão acumulado de todos os indivíduos avaliados pelo AG.
 
-    Usa vconcat em vez de facet para que use_container_width se aplique corretamente
-    e a legenda não vaze para fora do expander.
+    Cada ponto representa um indivíduo em uma geração, com posição X = geração,
+    posição Y = valor do hiperparâmetro e cor mapeada pelo fitness (escala viridis:
+    roxo = baixo, amarelo = alto). Os quatro hiperparâmetros numéricos são exibidos
+    em painéis empilhados verticalmente.
+
+    Usa ``vconcat`` em vez de ``facet`` para que ``use_container_width`` se aplique
+    corretamente e a legenda não vaze para fora do expander.
+
+    Args:
+        df: DataFrame acumulado com colunas ``Geração``, ``fitness``,
+            ``n_estimators``, ``max_depth``, ``min_samples_leaf``, ``min_samples_split``.
+
+    Returns:
+        Gráfico Altair com 4 painéis empilhados e escala de cor compartilhada.
     """
     genes = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_split"]
     color = alt.Color(
@@ -151,7 +223,33 @@ def run_ga_streaming(
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
 ):
-    """Gerador: produz estatísticas da população após cada geração."""
+    """Gerador que executa o AG geração a geração e emite estatísticas ao vivo.
+
+    A cada geração, aplica seleção, cruzamento e mutação via ``_gen_loop``,
+    rastreia o melhor indivíduo global e verifica se a meta de fitness foi atingida.
+    A execução é encerrada antecipadamente quando ``best_fitness > target_cv``.
+
+    Args:
+        X_train: Features de treino.
+        y_train: Rótulos de treino.
+        n_pop:   Tamanho da população inicial.
+        max_gen: Número máximo de gerações a executar.
+        target_improvement: Percentual de melhoria desejado acima de PHASE1_CV_ACCURACY
+            (ex.: 0.50 para +0.5%). Default 0.0 mantém a meta base.
+        cx_pb:     Probabilidade de cruzamento entre dois indivíduos.
+        mut_pb:    Probabilidade de um indivíduo sofrer mutação.
+        mut_indpb: Probabilidade de mutação de cada gene individualmente.
+
+    Yields:
+        Dicionário com as chaves:
+            - ``gen``         (int)   — índice da geração atual (0 = pop. inicial);
+            - ``population``  (list)  — lista de indivíduos da geração;
+            - ``best_ind``    (Individual) — melhor indivíduo encontrado até agora;
+            - ``best_fitness`` (float) — fitness do melhor indivíduo;
+            - ``mean_fitness`` (float) — fitness médio da população;
+            - ``target_cv``   (float) — meta de CV accuracy a ser superada;
+            - ``done``        (bool)  — True se a meta já foi atingida.
+    """
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
@@ -216,7 +314,7 @@ with st.sidebar:
         "Máx. gerações", min_value=20, max_value=300, value=100, step=20
     )
     target_improvement = st.slider(
-        "Melhoria alvo (%)", min_value=0.0, max_value=30.0, value=0.0, step=0.5,
+        "Melhoria alvo (%)", min_value=0.0, max_value=27.0, value=0.0, step=0.5,
         help=f"Percentual acima de {PHASE1_CV_ACCURACY:.4f} (GridSearch Fase 1) que o AG deve atingir.",
     ) / 100.0
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
@@ -282,10 +380,13 @@ with st.expander("🗺️ Exploração do espaço de busca", expanded=False):
 if start:
     X_train, X_test, y_train, y_test = load_data()
 
+    # Históricos acumulados para o gráfico de evolução do fitness
     hist_best: list[float] = []
     hist_mean: list[float] = []
     gen_idx:   list[int]   = []
+    # Acumula snapshots de todos os indivíduos para o gráfico de exploração
     all_explore_df: list[pd.DataFrame] = []
+    # Preserva o último estado emitido pelo gerador para o bloco de resultado final
     last_stats: dict | None = None
 
     for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement,
@@ -314,7 +415,8 @@ if start:
             else:
                 st.metric("Status", "🔄 Evoluindo…")
 
-        # Linha de meta no gráfico: regra horizontal em target_cv
+        # Reconstrói o gráfico de evolução a cada geração para refletir o histórico
+        # acumulado; a linha laranja tracejada marca a meta de fitness a ser superada
         chart_df = (
             pd.DataFrame(
                 {"Geração": gen_idx, "Melhor fitness": hist_best, "Fitness médio": hist_mean}
@@ -335,7 +437,7 @@ if start:
         )
         ph_chart.altair_chart((chart + rule).properties(height=280), width="stretch")
 
-        # Parâmetros do melhor indivíduo
+        # Decodifica e exibe os hiperparâmetros do melhor indivíduo encontrado até agora
         params = decode(best_ind)
         params_df = pd.DataFrame.from_dict(
             {k: [str(v)] for k, v in params.items()}, orient="columns"
@@ -358,7 +460,7 @@ if start:
             },
         )
 
-        # Exploração do espaço de busca: acumula todos os indivíduos desta geração
+        # Adiciona snapshot desta geração ao histórico de exploração e redesenha o gráfico
         all_explore_df.append(pd.DataFrame([{
             "Geração": gen,
             "n_estimators": int(p[0]),
@@ -406,6 +508,8 @@ if start:
             )
 
         st.subheader("📊 Avaliação no conjunto de teste")
+        # Retreina o modelo final com os hiperparâmetros do melhor indivíduo
+        # usando todo o conjunto de treino, sem validação cruzada
         params = decode(best_ind)
         clf = RandomForestClassifier(**params, random_state=42, n_jobs=-1)
         clf.fit(X_train, y_train)
@@ -429,5 +533,57 @@ if start:
         )
         st.dataframe(
             report_df.style.format("{:.4f}", na_rep="—"),
+            width="stretch",
+        )
+
+        # --------------------------------------------------------------------------------
+        # Salvar modelo com pickle
+        # --------------------------------------------------------------------------------
+        st.subheader("💾 Exportação do modelo")
+        # Garante que o diretório models/ existe antes de tentar escrever o arquivo
+        models_dir = os.path.join(os.path.dirname(__file__), "..", "models")
+        os.makedirs(models_dir, exist_ok=True)
+        export_time = datetime.now()
+        model_filename = f"model_diabetes_rf_optimized_{export_time.strftime('%y%m%d%H%M')}.pkl"
+        model_path = os.path.join(models_dir, model_filename)
+        # Serializa o modelo treinado em formato binário pickle
+        with open(model_path, "wb") as f:
+            pickle.dump(clf, f)
+        st.success(
+            f"Modelo salvo em: `{os.path.normpath(model_path)}`  \n"
+            f"Exportado em: **{export_time.strftime('%d/%m/%Y')}** às **{export_time.strftime('%H:%M')}**"
+        )
+
+        # --------------------------------------------------------------------------------
+        # Validar modelo carregado do disco
+        # --------------------------------------------------------------------------------
+        st.subheader("🔍 Validação do modelo salvo")
+        # Recarrega o arquivo pickle do disco para confirmar que a serialização
+        # foi bem-sucedida e que o modelo produz as mesmas predições
+        with open(model_path, "rb") as f:
+            clf_loaded = pickle.load(f)
+        y_pred_loaded = clf_loaded.predict(X_test)
+        test_acc_loaded = accuracy_score(y_test, y_pred_loaded)
+
+        v1, v2 = st.columns(2)
+        v1.metric("Acurácia (modelo carregado)", f"{test_acc_loaded:.4f}")
+        # Verificação bit-a-bit: as predições do modelo recarregado devem ser
+        # idênticas às do modelo original treinado nesta sessão
+        match = (y_pred_loaded == y_pred).all()
+        v2.metric("Predições idênticas ao original", "✅ Sim" if match else "❌ Não")
+
+        report_loaded = classification_report(
+            y_test,
+            y_pred_loaded,
+            target_names=["Não diabético", "Diabético"],
+            output_dict=True,
+        )
+        report_loaded_df = (
+            pd.DataFrame(report_loaded)
+            .T.drop(columns=["support"], errors="ignore")
+            .astype(float)
+        )
+        st.dataframe(
+            report_loaded_df.style.format("{:.4f}", na_rep="—"),
             width="stretch",
         )
