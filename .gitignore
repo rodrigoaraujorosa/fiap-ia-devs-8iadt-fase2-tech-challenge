@@ -127,6 +127,9 @@ dmyp.json
 # models/*
 # !models/.gitkeep
 
+# Optimized models exported by the GA (generated at runtime)
+models/*optimized*.pkl
+
 # Reports and figures
 # reports/figures/*
 # !reports/figures/.gitkeep
