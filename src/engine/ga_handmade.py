@@ -18,9 +18,12 @@ Critério de parada: CV acc > PHASE1_CV_ACCURACY (78,67 %) ou interrupção manu
 """
 import copy
 import random
+import time
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
+
+from .ga_logger import GALogger
 
 # ---------------------------------------------------------------------------
 # Constantes e configurações do AG
@@ -258,6 +261,8 @@ def _gen_loop(
     cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
+    gen: int = 0,
+    logger: GALogger | None = None,
 ) -> list[Individual]:
     """Executa um ciclo completo de uma geração (equivalente ao eaSimple do DEAP).
 
@@ -288,22 +293,38 @@ def _gen_loop(
     list[Individual] — nova população (offspring avaliado)
     """
     # 1 — Seleção: clona para não modificar os indivíduos da geração anterior
-    offspring = [copy.copy(ind) for ind in selection(population, len(population))]
+    selected = selection(population, len(population))
+    offspring = [copy.copy(ind) for ind in selected]
+    if logger is not None:
+        logger.log_selection(gen, n_selected=len(selected), tournsize=3)
+        logger.log_selected_individuals(gen, selected)
 
     # 2 — Crossover em pares consecutivos (i-1, i) com passo 2
     for i in range(1, len(offspring), 2):
-        if random.random() < cx_pb:
+        before1 = list(offspring[i - 1])
+        before2 = list(offspring[i])
+        happened = random.random() < cx_pb
+        if happened:
             offspring[i - 1], offspring[i] = crossover(offspring[i - 1], offspring[i])
             # Invalida o fitness: os filhos foram modificados e precisam ser reavaliados
             offspring[i - 1].fitness = None
             offspring[i].fitness = None
+        if logger is not None:
+            logger.log_crossover(
+                gen, (i - 1, i), before1, before2,
+                list(offspring[i - 1]), list(offspring[i]), happened,
+            )
 
     # 3 — Mutação: cada indivíduo é candidato independentemente
-    for ind in offspring:
-        if random.random() < mut_pb:
+    for idx, ind in enumerate(offspring):
+        before = list(ind)
+        happened = random.random() < mut_pb
+        if happened:
             mutate(ind, mut_indpb)
             # Invalida o fitness: genes alterados → resultado do CV anterior não é mais válido
             ind.fitness = None
+        if logger is not None:
+            logger.log_mutation(gen, idx, before, list(ind), happened)
 
     # 4 — Avaliação lazy: avalia somente quem foi modificado (fitness == None)
     for ind in offspring:
@@ -355,6 +376,13 @@ def run_ga(
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
+    _ga_logger = GALogger("ga_handmade")
+    _ga_logger.log_run_start(
+        n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+        target_improvement=target_improvement, target_cv=target_cv,
+    )
+    _t0 = time.time()
+
     population = create_seeded_pop(n_pop)
 
     # Avaliação inicial: todos os indivíduos precisam de fitness antes do 1º torneio
@@ -364,11 +392,25 @@ def run_ga(
     # Melhor indivíduo global: copiado para não ser sobrescrito pelo loop geracional
     best_ind = copy.copy(max(population, key=lambda ind: ind.fitness))  # type: ignore[arg-type]
 
+    # Log da população inicial (geração 0)
+    _ga_logger.log_generation_start(0)
+    _ga_logger.log_population(0, population)
+    _ga_logger.log_generation_stats(
+        0, float(best_ind.fitness),  # type: ignore[arg-type]
+        sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
+        target_cv, best_ind,
+    )
+
     gen = 0
     try:
         while True:
-            population = _gen_loop(population, X_train, y_train, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb)
             gen += 1
+            _ga_logger.log_generation_start(gen)
+            population = _gen_loop(
+                population, X_train, y_train,
+                cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+                gen=gen, logger=_ga_logger,
+            )
 
             # Atualiza o melhor global se a geração atual produziu um indivíduo superior
             current_best = max(population, key=lambda ind: ind.fitness)  # type: ignore[arg-type]
@@ -376,7 +418,10 @@ def run_ga(
                 best_ind = copy.copy(current_best)
 
             cv_acc    = round(best_ind.fitness, 4)  # type: ignore[arg-type]
+            mean_f    = sum(float(i.fitness) for i in population) / len(population)  # type: ignore[arg-type]
             feat_name = "sqrt" if best_ind[4] == 0 else "log2"
+            _ga_logger.log_generation_stats(gen, float(best_ind.fitness), mean_f, target_cv, best_ind)  # type: ignore[arg-type]
+            _ga_logger.log_population(gen, population)
             print(
                 f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f} (meta:>{target_cv:.4f})"
                 f" | n_estimators={best_ind[0]} max_depth={best_ind[1]}"
@@ -390,4 +435,9 @@ def run_ga(
         # Interrupção manual: retorna o melhor indivíduo encontrado até o momento
         print(f"\n      Interrompido na geração {gen}. Retornando melhor indivíduo encontrado até agora.")
 
+    _ga_logger.log_run_end(
+        gen, float(best_ind.fitness), time.time() - _t0,  # type: ignore[arg-type]
+        meta_atingida=round(float(best_ind.fitness), 4) > target_cv,  # type: ignore[arg-type]
+        best_ind=best_ind,
+    )
     return best_ind

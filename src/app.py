@@ -19,6 +19,7 @@ import copy
 import os
 import pickle
 import sys
+import time
 from datetime import datetime
 
 import altair as alt
@@ -40,6 +41,7 @@ from engine.ga_handmade import (
     create_seeded_pop,
     evaluate,
 )
+from engine.ga_logger import GALogger
 
 # --------------------------------------------------------------------------------
 # Configuração da página
@@ -250,10 +252,15 @@ def run_ga_streaming(
             - ``target_cv``   (float) — meta de CV accuracy a ser superada;
             - ``done``        (bool)  — True se a meta já foi atingida.
     """
-    print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.3f}, "
-          f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
+
+    _ga_logger = GALogger("ga_handmade")
+    _ga_logger.log_run_start(
+        n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+        target_improvement=target_improvement, target_cv=target_cv, max_gen=max_gen,
+    )
+    _t0 = time.time()
 
     population = create_seeded_pop(n_pop)
     for ind in population:
@@ -261,37 +268,65 @@ def run_ga_streaming(
 
     best_ind = copy.copy(max(population, key=lambda ind: ind.fitness))  # type: ignore[arg-type]
 
-    yield {
-        "gen": 0,
-        "population": list(population),
-        "best_ind": copy.copy(best_ind),
-        "best_fitness": float(best_ind.fitness),  # type: ignore[arg-type]
-        "mean_fitness": sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
-        "target_cv": target_cv,
-        "done": False,
-    }
+    # Log da população inicial (geração 0)
+    _ga_logger.log_generation_start(0)
+    _ga_logger.log_population(0, population)
+    _ga_logger.log_generation_stats(
+        0, float(best_ind.fitness),  # type: ignore[arg-type]
+        sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
+        target_cv, best_ind,
+    )
 
-    for gen in range(1, max_gen + 1):
-        population = _gen_loop(population, X_train, y_train, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb)
-
-        current_best = max(population, key=lambda ind: ind.fitness)  # type: ignore[arg-type]
-        if current_best.fitness > best_ind.fitness:  # type: ignore[operator]
-            best_ind = copy.copy(current_best)
-
-        done = round(float(best_ind.fitness), 4) > target_cv  # type: ignore[arg-type]
-
+    _last_gen = 0
+    try:
         yield {
-            "gen": gen,
+            "gen": 0,
             "population": list(population),
             "best_ind": copy.copy(best_ind),
             "best_fitness": float(best_ind.fitness),  # type: ignore[arg-type]
             "mean_fitness": sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
             "target_cv": target_cv,
-            "done": done,
+            "done": False,
         }
 
-        if done:
-            break
+        for gen in range(1, max_gen + 1):
+            _last_gen = gen
+            _ga_logger.log_generation_start(gen)
+            population = _gen_loop(
+                population, X_train, y_train,
+                cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+                gen=gen, logger=_ga_logger,
+            )
+
+            current_best = max(population, key=lambda ind: ind.fitness)  # type: ignore[arg-type]
+            if current_best.fitness > best_ind.fitness:  # type: ignore[operator]
+                best_ind = copy.copy(current_best)
+
+            done = round(float(best_ind.fitness), 4) > target_cv  # type: ignore[arg-type]
+            best_f = float(best_ind.fitness)  # type: ignore[arg-type]
+            mean_f = sum(float(i.fitness) for i in population) / len(population)  # type: ignore[arg-type]
+
+            _ga_logger.log_generation_stats(gen, best_f, mean_f, target_cv, best_ind)
+            _ga_logger.log_population(gen, population)
+
+            yield {
+                "gen": gen,
+                "population": list(population),
+                "best_ind": copy.copy(best_ind),
+                "best_fitness": best_f,
+                "mean_fitness": mean_f,
+                "target_cv": target_cv,
+                "done": done,
+            }
+
+            if done:
+                break
+    finally:
+        elapsed = time.time() - _t0
+        meta_atingida = round(float(best_ind.fitness), 4) > target_cv  # type: ignore[arg-type]
+        _ga_logger.log_run_end(
+            _last_gen, float(best_ind.fitness), elapsed, meta_atingida, best_ind  # type: ignore[arg-type]
+        )
 
 # --------------------------------------------------------------------------------
 # Layout estático: título, descrição e sidebar para controle de parâmetros do AG

@@ -1,7 +1,10 @@
 import random
-from deap import base, creator, tools, algorithms
+import time
+from deap import base, creator, tools
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
+
+from .ga_logger import GALogger
 
 # ---------------------------------------------------------------------------
 # Tipos do DEAP
@@ -155,6 +158,13 @@ def run_ga(
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
+    _ga_logger = GALogger("ga_deap")
+    _ga_logger.log_run_start(
+        n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+        target_improvement=target_improvement, target_cv=target_cv,
+    )
+    _t0 = time.time()
+
     # Registra a função de aptidão com os dados de treino via closure
     toolbox.register("evaluate", evaluate, X=X_train, y=y_train)
 
@@ -179,17 +189,79 @@ def run_ga(
     # Hall of Fame: armazena o melhor indivíduo de todas as gerações
     hof = tools.HallOfFame(1)
 
-    # Loop geracional sem limite fixo: encerra ao superar a meta dinâmica
+    # Avaliação inicial
+    for ind in populacao:
+        if not ind.fitness.valid:
+            ind.fitness.values = toolbox.evaluate(ind) # type: ignore
+    hof.update(populacao)
+
+    # Log da população inicial (geração 0)
+    _ga_logger.log_generation_start(0)
+    _ga_logger.log_population(0, populacao)
+    fits0 = [ind.fitness.values[0] for ind in populacao]
+    _ga_logger.log_generation_stats(
+        0, hof[0].fitness.values[0], sum(fits0) / len(fits0), target_cv, hof[0]
+    )
+
     gen = 0
     try:
         while True:
-            populacao, _ = algorithms.eaSimple(
-                populacao, toolbox, cxpb=cx_pb, mutpb=mut_pb, ngen=1,
-                halloffame=hof, verbose=False,
-            )
             gen += 1
+            _ga_logger.log_generation_start(gen)
+
+            # Seleção
+            selected = toolbox.select(populacao, len(populacao)) # type: ignore
+            _ga_logger.log_selection(gen, n_selected=len(selected), tournsize=3)
+            _ga_logger.log_selected_individuals(gen, selected)
+            offspring = [toolbox.clone(ind) for ind in selected] # type: ignore
+
+            # Crossover (estilo varAnd)
+            for i in range(1, len(offspring), 2):
+                before1 = list(offspring[i - 1])
+                before2 = list(offspring[i])
+                if random.random() < cx_pb:
+                    offspring[i - 1], offspring[i] = toolbox.mate( # type: ignore
+                        offspring[i - 1], offspring[i]
+                    )
+                    del offspring[i - 1].fitness.values
+                    del offspring[i].fitness.values
+                    _ga_logger.log_crossover(
+                        gen, (i - 1, i), before1, before2,
+                        list(offspring[i - 1]), list(offspring[i]), True,
+                    )
+                else:
+                    _ga_logger.log_crossover(
+                        gen, (i - 1, i), before1, before2,
+                        list(offspring[i - 1]), list(offspring[i]), False,
+                    )
+
+            # Mutação
+            for idx in range(len(offspring)):
+                before = list(offspring[idx])
+                if random.random() < mut_pb:
+                    offspring[idx], = toolbox.mutate(offspring[idx]) # type: ignore
+                    del offspring[idx].fitness.values
+                    _ga_logger.log_mutation(gen, idx, before, list(offspring[idx]), True)
+                else:
+                    _ga_logger.log_mutation(gen, idx, before, list(offspring[idx]), False)
+
+            # Avaliação lazy
+            for ind in offspring:
+                if not ind.fitness.valid:
+                    ind.fitness.values = toolbox.evaluate(ind) # type: ignore
+
+            # Atualiza população e HoF
+            populacao[:] = offspring
+            hof.update(populacao)
+
             best_ind = hof[0]
             cv_acc   = round(best_ind.fitness.values[0], 4)
+            fits     = [ind.fitness.values[0] for ind in populacao]
+            mean_f   = sum(fits) / len(fits)
+
+            _ga_logger.log_generation_stats(gen, cv_acc, mean_f, target_cv, best_ind)
+            _ga_logger.log_population(gen, populacao)
+
             feat_name = "sqrt" if best_ind[4] == 0 else "log2"
             print(
                 f"      Geração {gen:>3} | CV 5-fold: {cv_acc:.4f} (meta:>{target_cv:.4f})"
@@ -202,4 +274,10 @@ def run_ga(
     except KeyboardInterrupt:
         print(f"\n      Interrompido na geração {gen}. Retornando melhor indivíduo encontrado até agora.")
 
+    best_ind = hof[0]
+    _ga_logger.log_run_end(
+        gen, best_ind.fitness.values[0], time.time() - _t0,
+        meta_atingida=round(best_ind.fitness.values[0], 4) > target_cv,
+        best_ind=best_ind,
+    )
     return hof[0]
