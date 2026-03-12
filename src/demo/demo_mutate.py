@@ -17,6 +17,8 @@ GENE_LABELS = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_spl
 
 
 def _fmt(ind: Individual) -> str:
+    # Formata o indivíduo como string legível com nome=valor por gene.
+    # max_features é decodificado de binário (0=sqrt, 1=log2) para o nome real.
     parts = []
     for i, label in enumerate(GENE_LABELS):
         if i == 4:
@@ -29,6 +31,8 @@ def _fmt(ind: Individual) -> str:
 
 def _fmt_diff(before: list, after: Individual) -> str:
     """Igual a _fmt, mas marca com (*) os genes que foram mutados."""
+    # Compara gene a gene com o estado anterior para identificar quais foram
+    # alterados pela mutação, destacando visualmente as mudanças no terminal.
     parts = []
     for i, label in enumerate(GENE_LABELS):
         if i == 4:
@@ -41,11 +45,15 @@ def _fmt_diff(before: list, after: Individual) -> str:
 
 
 def _changed_genes(before: list, after: Individual) -> list[str]:
+    # Retorna os nomes dos genes que mudaram após a mutação,
+    # comparando o cromossomo original com o mutado posição a posição.
     return [GENE_LABELS[i] for i in range(5) if before[i] != after[i]]
 
 
 # ---------------------------------------------------------------------------
-# Exemplos fixos com seeds diferentes para mostrar variedade de mutações
+# Exemplos fixos com seeds diferentes para mostrar variedade de mutações.
+# Cada seed produz uma combinação diferente de genes mutados,
+# ilustrando que a mutação é estocástica e pode afetar 0 a 5 genes.
 # ---------------------------------------------------------------------------
 EXAMPLES = [
     # (genes_originais,                    seed)
@@ -64,9 +72,9 @@ print("  Genes marcados com (*) foram mutados.")
 print("=" * 72)
 
 for idx, (genes, seed) in enumerate(EXAMPLES, 1):
-    random.seed(seed)
+    random.seed(seed)  # fixa o gerador para reprodutibilidade do demo
     ind = Individual(genes[:])
-    mutate(ind, mut_indpb=MUT_INDPB)
+    mutate(ind, mut_indpb=MUT_INDPB)  # aplica mutação uniforme inteira gene a gene
 
     changed = _changed_genes(genes, ind)
     changed_str = ", ".join(changed) if changed else "nenhum gene alterado"

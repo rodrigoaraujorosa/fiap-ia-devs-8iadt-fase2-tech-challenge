@@ -87,6 +87,25 @@ toolbox.register(
 toolbox.register("population", tools.initRepeat, list, getattr(toolbox, "individual"))
 
 
+def _cx_effective(ind1, ind2):
+    """Crossover de 2 pontos garantindo troca em pelo menos um gene divergente.
+
+    Substitui o ``tools.cxTwoPoint`` do DEAP para evitar crossovers nulos:
+    quando os cortes aleatórios caem numa região onde os genes já são idênticos,
+    o resultado é genéticamente inútil. Esta função ancora um dos cortes numa
+    posição onde os pais diferem, garantindo diversidade real nos filhos.
+    """
+    size = len(ind1)
+    diff = [i for i in range(size) if ind1[i] != ind2[i]]
+    if not diff:
+        return ind1, ind2  # pais idênticos: nada a trocar
+    pivot = random.choice(diff)
+    cx1 = random.randint(0, pivot)
+    cx2 = random.randint(pivot + 1, size)
+    ind1[cx1:cx2], ind2[cx1:cx2] = list(ind2[cx1:cx2]), list(ind1[cx1:cx2])
+    return ind1, ind2
+
+
 def evaluate(individual, X, y):
     """Função de aptidão: treina um RandomForest com os hiperparâmetros do indivíduo
     e retorna  mean_cv - CV_STD_PENALTY * std_cv  (validação cruzada de 5 folds).
@@ -168,8 +187,8 @@ def run_ga(
     # Registra a função de aptidão com os dados de treino via closure
     toolbox.register("evaluate", evaluate, X=X_train, y=y_train)
 
-    # Crossover de dois pontos: troca segmentos entre dois pais para gerar filhos
-    toolbox.register("mate", tools.cxTwoPoint)
+    # Crossover de dois pontos com garantia de troca em gene divergente
+    toolbox.register("mate", _cx_effective)
 
     # Mutação uniforme inteira: altera cada gene com probabilidade indpb,
     # respeitando os limites [low, up] de cada posição do indivíduo
@@ -219,7 +238,9 @@ def run_ga(
             for i in range(1, len(offspring), 2):
                 before1 = list(offspring[i - 1])
                 before2 = list(offspring[i])
-                if random.random() < cx_pb:
+                # Pais idênticos: crossover não geraria diversidade — pula o operador
+                identical = before1 == before2
+                if (not identical) and random.random() < cx_pb:
                     offspring[i - 1], offspring[i] = toolbox.mate( # type: ignore
                         offspring[i - 1], offspring[i]
                     )

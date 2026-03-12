@@ -20,12 +20,15 @@ from engine.ga_handmade import Individual, crossover
 
 GENE_LABELS = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_split", "max_features"]
 
-# Pais com todos os 5 genes diferentes para que qualquer troca fique evidente
+# Pais com todos os 5 genes diferentes para que qualquer troca fique evidente.
+# Representam dois extremos do espaço de busca: floresta pequena/rasa vs. grande/profunda.
 PARENT1 = [20,  5,  1,  2, 0]   # n_estimators=20  max_depth=5   min_samples_leaf=1  min_samples_split=2   max_features=sqrt
 PARENT2 = [60, 25, 10, 20, 1]   # n_estimators=60  max_depth=25  min_samples_leaf=10  min_samples_split=20   max_features=log2
 
 
 def _fmt(genes: list) -> str:
+    # Formata os genes como string legível com nome=valor para cada hiperparâmetro.
+    # max_features é decodificado de binário (0/1) para o nome real (sqrt/log2).
     parts = []
     for i, label in enumerate(GENE_LABELS):
         if i == 4:
@@ -51,6 +54,9 @@ def _fmt_diff(before: list, after: Individual) -> str:
 
 def _find_seed_for_n_changed(n_target: int, parent1: list, parent2: list) -> int:
     """Busca o menor seed que produz exatamente n_target genes trocados no Child 1."""
+    # Itera seeds até encontrar one que resulte no número exato de genes trocados.
+    # Isso garante que o demo exiba um exemplo representativo para cada largura
+    # de segmento possível (1, 2, 3 e 4 genes), tornando a visualização didática.
     for seed in range(10_000):
         random.seed(seed)
         c1, _ = crossover(Individual(parent1[:]), Individual(parent2[:]))
@@ -61,7 +67,10 @@ def _find_seed_for_n_changed(n_target: int, parent1: list, parent2: list) -> int
 
 
 # ---------------------------------------------------------------------------
-# Encontra um seed para cada largura de segmento (1, 2, 3 e 4 genes trocados)
+# Encontra um seed para cada largura de segmento (1, 2, 3 e 4 genes trocados).
+# Com 5 genes, o segmento [cx1:cx2) pode no máximo trocar 4 genes
+# (não é possível trocar todos os 5 com crossover de 2 pontos, pois
+# pelo menos um extremo sempre permanece em cada pai).
 # ---------------------------------------------------------------------------
 print("=" * 72)
 print("  Demo: Operador de Crossover (dois pontos) — ga_handmade.py")
@@ -76,11 +85,11 @@ print("=" * 72)
 
 for n in range(1, 5):
     seed = _find_seed_for_n_changed(n, PARENT1, PARENT2)
-    random.seed(seed)
+    random.seed(seed)  # reprodutibilidade: mesmos cortes a cada execução
     ind1 = Individual(PARENT1[:])
     ind2 = Individual(PARENT2[:])
     c1, c2 = crossover(ind1, ind2)
-    n_changed = sum(1 for i in range(5) if c1[i] != PARENT1[i])
+    n_changed = sum(1 for i in range(5) if c1[i] != PARENT1[i])  # confirma o tamanho do segmento
 
     print(f"\n  Segmento de {n} gene(s) trocado(s)  (seed={seed})")
     print(f"  {'Child 1':<10}: {_fmt_diff(PARENT1, c1)}")

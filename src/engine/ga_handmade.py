@@ -182,29 +182,28 @@ def evaluate(individual: Individual, X, y) -> float:
 # Operadores genéticos
 # ---------------------------------------------------------------------------
 def crossover(ind1: Individual, ind2: Individual) -> tuple[Individual, Individual]:
-    """Crossover de dois pontos: recombina material genético entre dois pais.
+    """Crossover de dois pontos garantindo troca de pelo menos um gene divergente.
 
-    Sorteia dois pontos de corte cx1 < cx2 e troca o segmento [cx1, cx2)
-    entre os dois indivíduos in-place. O algoritmo garante cx1 < cx2 mesmo
-    quando os pontos saem fora de ordem.
+    Identifica as posições onde os dois pais diferem e ancora um dos pontos de
+    corte nessa região, garantindo que o segmento trocado contenha sempre ao
+    menos um gene distinto. Isso evita crossovers nulos — que ocorrem quando os
+    cortes aleatórios caem numa região onde os genes já são idênticos.
 
-    Exemplo com indivíduo de tamanho 5 e cortes em 1 e 3:
-        pai1: [A, B, C, D, E]      pai2: [a, b, c, d, e]
-              ↕ troca [1:3) ↕
-        filho1: [A, b, c, D, E]   filho2: [a, B, C, d, e]
+    Exemplo: pais [53,15,8,5,1] e [36,13,1,5,1] diferem em idx 0,1,2.
+    pivot = random.choice([0,1,2]) → garante que [cx1:cx2] inclui esse índice.
 
     Os indivíduos são modificados in-place; o fitness é invalidado (→ None)
     pelo chamador (_gen_loop) para forçar re-avaliação.
     """
     size = len(ind1)
-    # Sorteia dois índices distintos garantindo cx1 < cx2
-    cx1 = random.randint(1, size)
-    cx2 = random.randint(1, size - 1)
-    if cx2 >= cx1:
-        cx2 += 1          # empurra cx2 para frente se coincidiu com cx1
-    else:
-        cx1, cx2 = cx2, cx1   # ordena para que cx1 < cx2
-    # Troca o segmento entre os dois pais
+    # Posições onde os genes diferem — o corte deve passar por pelo menos uma
+    diff = [i for i in range(size) if ind1[i] != ind2[i]]
+    if not diff:
+        return ind1, ind2  # pais idênticos: nada a trocar
+    # Ancora em um gene divergente; expande o slice aleatoriamente ao redor dele
+    pivot = random.choice(diff)
+    cx1 = random.randint(0, pivot)
+    cx2 = random.randint(pivot + 1, size)
     ind1[cx1:cx2], ind2[cx1:cx2] = ind2[cx1:cx2][:], ind1[cx1:cx2][:]
     return ind1, ind2
 
@@ -303,7 +302,9 @@ def _gen_loop(
     for i in range(1, len(offspring), 2):
         before1 = list(offspring[i - 1])
         before2 = list(offspring[i])
-        happened = random.random() < cx_pb
+        # Pais idênticos: crossover não geraria diversidade — pula o operador
+        identical = before1 == before2
+        happened = (not identical) and random.random() < cx_pb
         if happened:
             offspring[i - 1], offspring[i] = crossover(offspring[i - 1], offspring[i])
             # Invalida o fitness: os filhos foram modificados e precisam ser reavaliados

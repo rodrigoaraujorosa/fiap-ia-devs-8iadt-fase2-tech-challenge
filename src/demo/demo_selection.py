@@ -22,6 +22,8 @@ GENE_LABELS = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_spl
 
 
 def _fmt(ind: Individual) -> str:
+    # Formata o indivíduo como string legível com nome=valor por gene.
+    # max_features é decodificado de binário (0=sqrt, 1=log2) para o nome real.
     parts = []
     for i, label in enumerate(GENE_LABELS):
         if i == 4:
@@ -33,13 +35,17 @@ def _fmt(ind: Individual) -> str:
 
 
 def _make_ind(genes: list, fitness: float) -> Individual:
+    # Cria um indivíduo já inicializado com fitness pré-definido,
+    # simulando uma população que já passou por avaliação (cross-validation).
     ind = Individual(genes)
     ind.fitness = fitness
     return ind
 
 
 # ---------------------------------------------------------------------------
-# População de exemplo com fitnesses variados
+# População de exemplo com fitnesses variados.
+# Os valores cobrem um espectro de aptidão para que a pressão seletiva
+# do torneio seja claramente observada nas partes 2 e 3 do demo.
 # ---------------------------------------------------------------------------
 POPULATION = [
     _make_ind([20,  5,  1,  2, 0], fitness=0.7000),
@@ -56,7 +62,9 @@ print("  tournsize=3 | k = tamanho da população")
 print("=" * 72)
 
 # ---------------------------------------------------------------------------
-# Parte 1 — Exibe a população com os fitness
+# Parte 1 — Exibe a população com os fitness.
+# O ← melhor marca visualmente o indivíduo de referência para comparar
+# com os selecionados pelo torneio nas partes seguintes.
 # ---------------------------------------------------------------------------
 print("\n  População inicial:")
 print(f"  {'#':<4} {'Fitness':<10}  Indivíduo")
@@ -66,7 +74,9 @@ for i, ind in enumerate(POPULATION):
     print(f"  {i:<4} {ind.fitness:<10.4f}  {_fmt(ind)}{marker}")
 
 # ---------------------------------------------------------------------------
-# Parte 2 — Exemplo único de seleção (seed fixo, k = tamanho da população)
+# Parte 2 — Exemplo único de seleção (seed fixo, k = tamanho da população).
+# seed=42 garante reprodutibilidade: o mesmo resultado a cada execução.
+# Com k igual ao tamanho da população, cria-se uma nova geração de mesmo tamanho.
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 72)
 print("  Exemplo de seleção (seed=42, k=6):")
@@ -86,7 +96,11 @@ print(f"\n  Fitness selecionados (ord. desc.): {fitness_chosen}")
 print(f"  Fitness da população (ord. desc.): {fitness_pop}")
 
 # ---------------------------------------------------------------------------
-# Parte 3 — Frequência de seleção em 1000 torneios (pressão seletiva)
+# Parte 3 — Frequência de seleção em 1000 torneios (pressão seletiva).
+# Repete a seleção N_ROUNDS vezes e conta quantas vezes cada indivíduo
+# foi escolhido. Permite visualizar que o torneio favorece os mais aptos
+# mas ainda permite que indivíduos fracos sejam ocasionalmente eleitos,
+# mantendo a diversidade genética da população.
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 72)
 print("  Frequência de seleção em 1.000 torneios (k=6 por rodada):")
