@@ -3,7 +3,7 @@
 Registra parâmetros de execução, operadores genéticos (seleção, cruzamento,
 mutação) e estatísticas por geração em arquivo de log persistente.
 
-Arquivo criado em: logs/ga_{algoritmo}_{YYYYMMDD_HHMMSS}.log
+Arquivo criado em: logs/{algoritmo}_{YYYYMMDD_HHMMSS}.log
 
 Níveis de log utilizados:
   INFO  — eventos relevantes: início/fim de execução, seleção, cruzamentos e
@@ -61,16 +61,16 @@ def _get_fitness(ind) -> float | None:
 
 
 class GALogger:
-    """Logger por execução do AG. Cria logs/ga_{algorithm}_{timestamp}.log."""
+    """Logger por execução do AG. Cria logs/{algorithm}_{timestamp}.log."""
 
     def __init__(self, algorithm: str):
         os.makedirs(_LOGS_DIR, exist_ok=True)
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         self._run_id = run_id
-        self.log_file = os.path.join(_LOGS_DIR, f"ga_{algorithm}_{run_id}.log")
+        self.log_file = os.path.join(_LOGS_DIR, f"{algorithm}_{run_id}.log")
         self._algorithm = algorithm
 
-        logger_name = f"ga.{algorithm}.{run_id}"
+        logger_name = f"{algorithm}.{run_id}"
         self._logger = logging.getLogger(logger_name)
         self._logger.setLevel(logging.DEBUG)
         self._logger.propagate = False
