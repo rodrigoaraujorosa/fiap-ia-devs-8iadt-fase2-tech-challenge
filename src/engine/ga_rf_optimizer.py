@@ -1,4 +1,4 @@
-"""Implementação manual (sem DEAP) de um Algoritmo Genético para otimização
+"""Implementação de um Algoritmo Genético para otimização
 de hiperparâmetros do RandomForestClassifier.
 
 Estrutura do indivíduo (5 genes):
@@ -14,7 +14,7 @@ Fluxo do AG por geração:
   3. Mutação uniforme inteira → diversifica a população
   4. Avaliação (CV 5-fold)  → mede a aptidão de cada novo indivíduo
 
-Critério de parada: CV acc > PHASE1_CV_ACCURACY (78,67 %) ou interrupção manual.
+Critério de parada: CV acc > target_cv = PHASE1_CV_ACCURACY × (1 + target_improvement) ou interrupção manual.
 """
 import copy
 import random
@@ -71,8 +71,7 @@ class Individual(list):
     do RandomForestClassifier, com atributo `fitness` associado.
 
     Herda de `list` para que os operadores genéticos (crossover, mutação)
-    possam indexar e fatiar o indivíduo diretamente, seguindo a mesma
-    interface da biblioteca DEAP.
+    possam indexar e dividir o indivíduo diretamente.
 
     Genes (índice → hiperparâmetro → tipo — intervalo):
         [0] n_estimators      — número de árvores          (int,  20–60)
@@ -110,7 +109,7 @@ def _random_individual() -> Individual:
     """
     return Individual([
         random.randint(N_ESTIMATORS_LOW, N_ESTIMATORS_HIGH),
-        random.choice(MAX_DEPTH_OPTIONS),           # valor categórico discreto
+        random.choice(MAX_DEPTH_OPTIONS),           # valor categórico
         random.randint(MIN_SAMPLES_LEAF_LOW, MIN_SAMPLES_LEAF_HIGH),
         random.randint(MIN_SAMPLES_SPLIT_LOW, MIN_SAMPLES_SPLIT_HIGH),
         random.randint(0, 1),                        # max_features binário
@@ -137,7 +136,7 @@ def create_seeded_pop(n_pop: int) -> list[Individual]:
 
 
 # ---------------------------------------------------------------------------
-# Função de aptidão
+# Função de validação
 # ---------------------------------------------------------------------------
 def evaluate(individual: Individual, X, y) -> float:
     """Calcula o fitness de um indivíduo treinando um RandomForest com seus genes.
@@ -173,7 +172,7 @@ def evaluate(individual: Individual, X, y) -> float:
         n_jobs=-1,           # usa todos os núcleos disponíveis
     )
     scores = cross_val_score(clf, X, y, cv=5, scoring="accuracy", n_jobs=-1)
-    # Penaliza a variância: premia acurácia alta E consistente entre folds
+    # Penaliza a variância: premia acurácia alta e consistente entre folds
     return scores.mean() - CV_STD_PENALTY * scores.std()
 
 
@@ -261,10 +260,10 @@ def _gen_loop(
     gen: int = 0,
     logger: GALogger | None = None,
 ) -> list[Individual]:
-    """Executa um ciclo completo de uma geração (equivalente ao eaSimple do DEAP).
+    """Executa um ciclo completo de uma geração.
 
     Implementa o fluxo clássico: Seleção → Crossover → Mutação → Avaliação.
-    A população original não é alterada; o retorno é uma nova lista de offspring.
+    A população original não é alterada; o retorno é uma nova lista.
 
     Passos
     ------
@@ -302,8 +301,8 @@ def _gen_loop(
     # 2 — Crossover em pares consecutivos (i-1, i) com passo 2
     _t_cx = time.perf_counter()
     for i in range(1, len(offspring), 2):
-        before1 = list(offspring[i - 1])
-        before2 = list(offspring[i])
+        before1 = list(offspring[i - 1]) # cópia do pai esquerdo (i=1 → idx 0)
+        before2 = list(offspring[i]) # cópia do pai direito  (i=1 → idx 1)
         # Pais idênticos: crossover não geraria diversidade — pula o operador
         identical = before1 == before2
         happened = not identical
