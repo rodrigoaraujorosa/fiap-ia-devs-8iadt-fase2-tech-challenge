@@ -13,6 +13,8 @@ Níveis de log utilizados:
 """
 import logging
 import os
+import time
+from contextlib import contextmanager
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -85,6 +87,46 @@ class GALogger:
         fh.setFormatter(fmt)
         self._logger.addHandler(fh)
 
+        # Acumuladores de profiling: tempo total e número de chamadas por fase
+        self._phase_times: dict[str, float] = {}
+        self._phase_counts: dict[str, int]  = {}
+
+    # ------------------------------------------------------------------
+    # Início / fim de execução
+    # ------------------------------------------------------------------
+
+    @contextmanager
+    def timer(self, phase: str):
+        """Context manager que mede o tempo de uma fase e acumula no profiling.
+
+        Uso::
+
+            with logger.timer("avaliacao"):
+                evaluate(ind, X, y)
+        """
+        t0 = time.perf_counter()
+        try:
+            yield
+        finally:
+            elapsed = time.perf_counter() - t0
+            self._phase_times[phase]  = self._phase_times.get(phase, 0.0)  + elapsed
+            self._phase_counts[phase] = self._phase_counts.get(phase, 0)   + 1
+
+    def _log_profiling(self) -> None:
+        """Emite um bloco PROFILING no log com o tempo acumulado por fase."""
+        if not self._phase_times:
+            return
+        total = sum(self._phase_times.values())
+        self._logger.info("[PROFILING  ] ── resumo de tempo por fase ──")
+        for phase, t in sorted(self._phase_times.items(), key=lambda x: x[1], reverse=True):
+            count = self._phase_counts.get(phase, 1)
+            pct   = (t / total * 100) if total > 0 else 0.0
+            self._logger.info(
+                f"[PROFILING  ] fase={phase:<16} | total={t:.3f}s | "
+                f"chamadas={count:>5} | media={(t/count)*1000:.2f}ms | {pct:.1f}%"
+            )
+        self._logger.info(f"[PROFILING  ] total_rastreado={total:.3f}s")
+
     # ------------------------------------------------------------------
     # Início / fim de execução
     # ------------------------------------------------------------------
@@ -120,6 +162,7 @@ class GALogger:
         genes_str = (
             f" | genes=[{_decode_genes(best_ind)}]" if best_ind is not None else ""
         )
+        self._log_profiling()
         self._logger.info(
             f"[RUN_END    ] gen={gen} | best_fitness={best_fitness:.4f} | "
             f"elapsed={elapsed:.1f}s | "
@@ -324,6 +367,25 @@ class GALogger:
             f"  Modelo exportado : {os.path.normpath(model_path)}",
             f"  Log de execução  : {os.path.normpath(self.log_file)}",
             f"  Este resumo      : {os.path.normpath(summary_path)}",
+        ]
+        if self._phase_times:
+            total_t = sum(self._phase_times.values())
+            lines += [
+                "",
+                SEP2,
+                "  Profiling — tempo por fase",
+                SEP2,
+                f"  {'Fase':<18} {'Total (s)':>10} {'Chamadas':>10} {'Média (ms)':>12} {'%':>6}",
+                f"  {'-'*58}",
+            ]
+            for phase, t in sorted(self._phase_times.items(), key=lambda x: x[1], reverse=True):
+                count = self._phase_counts.get(phase, 1)
+                pct   = (t / total_t * 100) if total_t > 0 else 0.0
+                lines.append(
+                    f"  {phase:<18} {t:>10.3f} {count:>10} {(t/count)*1000:>12.2f} {pct:>6.1f}%"
+                )
+            lines.append(f"  {'TOTAL':<18} {total_t:>10.3f}")
+        lines += [
             SEP,
             "",
         ]

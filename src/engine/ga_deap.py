@@ -125,7 +125,7 @@ def evaluate(individual, X, y):
         random_state=42,
         n_jobs=-1,
     )
-    scores = cross_val_score(clf, X, y, cv=5)
+    scores = cross_val_score(clf, X, y, cv=5, scoring="accuracy")
     return (scores.mean() - CV_STD_PENALTY * scores.std(),)
 
 
@@ -209,9 +209,12 @@ def run_ga(
     hof = tools.HallOfFame(1)
 
     # Avaliação inicial
+    _t_eval0 = time.perf_counter()
     for ind in populacao:
         if not ind.fitness.valid:
             ind.fitness.values = toolbox.evaluate(ind) # type: ignore
+    _ga_logger._phase_times["avaliacao"]  = time.perf_counter() - _t_eval0
+    _ga_logger._phase_counts["avaliacao"] = 1
     hof.update(populacao)
 
     # Log da população inicial (geração 0)
@@ -229,12 +232,16 @@ def run_ga(
             _ga_logger.log_generation_start(gen)
 
             # Seleção
+            _t_sel = time.perf_counter()
             selected = toolbox.select(populacao, len(populacao)) # type: ignore
+            _ga_logger._phase_times["selecao"]  = _ga_logger._phase_times.get("selecao", 0.0)  + (time.perf_counter() - _t_sel)
+            _ga_logger._phase_counts["selecao"] = _ga_logger._phase_counts.get("selecao", 0)   + 1
             _ga_logger.log_selection(gen, n_selected=len(selected), tournsize=3)
             _ga_logger.log_selected_individuals(gen, selected)
             offspring = [toolbox.clone(ind) for ind in selected] # type: ignore
 
             # Crossover (estilo varAnd)
+            _t_cx = time.perf_counter()
             for i in range(1, len(offspring), 2):
                 before1 = list(offspring[i - 1])
                 before2 = list(offspring[i])
@@ -255,8 +262,11 @@ def run_ga(
                         gen, (i - 1, i), before1, before2,
                         list(offspring[i - 1]), list(offspring[i]), False,
                     )
+            _ga_logger._phase_times["crossover"]  = _ga_logger._phase_times.get("crossover", 0.0)  + (time.perf_counter() - _t_cx)
+            _ga_logger._phase_counts["crossover"] = _ga_logger._phase_counts.get("crossover", 0)   + 1
 
             # Mutação
+            _t_mut = time.perf_counter()
             for idx in range(len(offspring)):
                 before = list(offspring[idx])
                 if random.random() < mut_pb:
@@ -265,11 +275,16 @@ def run_ga(
                     _ga_logger.log_mutation(gen, idx, before, list(offspring[idx]), True)
                 else:
                     _ga_logger.log_mutation(gen, idx, before, list(offspring[idx]), False)
+            _ga_logger._phase_times["mutacao"]  = _ga_logger._phase_times.get("mutacao", 0.0)  + (time.perf_counter() - _t_mut)
+            _ga_logger._phase_counts["mutacao"] = _ga_logger._phase_counts.get("mutacao", 0)   + 1
 
             # Avaliação lazy
+            _t_eval = time.perf_counter()
             for ind in offspring:
                 if not ind.fitness.valid:
                     ind.fitness.values = toolbox.evaluate(ind) # type: ignore
+            _ga_logger._phase_times["avaliacao"]  = _ga_logger._phase_times.get("avaliacao", 0.0)  + (time.perf_counter() - _t_eval)
+            _ga_logger._phase_counts["avaliacao"] = _ga_logger._phase_counts.get("avaliacao", 0)   + 1
 
             # Atualiza população e HoF
             populacao[:] = offspring

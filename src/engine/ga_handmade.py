@@ -173,7 +173,7 @@ def evaluate(individual: Individual, X, y) -> float:
         random_state=42,
         n_jobs=-1,           # usa todos os núcleos disponíveis
     )
-    scores = cross_val_score(clf, X, y, cv=5)
+    scores = cross_val_score(clf, X, y, cv=5, scoring="accuracy")
     # Penaliza a variância: premia acurácia alta E consistente entre folds
     return scores.mean() - CV_STD_PENALTY * scores.std()
 
@@ -292,13 +292,17 @@ def _gen_loop(
     list[Individual] — nova população (offspring avaliado)
     """
     # 1 — Seleção: clona para não modificar os indivíduos da geração anterior
+    _t_sel = time.perf_counter()
     selected = selection(population, len(population))
     offspring = [copy.copy(ind) for ind in selected]
     if logger is not None:
+        logger._phase_times["selecao"]  = logger._phase_times.get("selecao", 0.0)  + (time.perf_counter() - _t_sel)
+        logger._phase_counts["selecao"] = logger._phase_counts.get("selecao", 0)   + 1
         logger.log_selection(gen, n_selected=len(selected), tournsize=3)
         logger.log_selected_individuals(gen, selected)
 
     # 2 — Crossover em pares consecutivos (i-1, i) com passo 2
+    _t_cx = time.perf_counter()
     for i in range(1, len(offspring), 2):
         before1 = list(offspring[i - 1])
         before2 = list(offspring[i])
@@ -315,8 +319,12 @@ def _gen_loop(
                 gen, (i - 1, i), before1, before2,
                 list(offspring[i - 1]), list(offspring[i]), happened,
             )
+    if logger is not None:
+        logger._phase_times["crossover"]  = logger._phase_times.get("crossover", 0.0)  + (time.perf_counter() - _t_cx)
+        logger._phase_counts["crossover"] = logger._phase_counts.get("crossover", 0)   + 1
 
     # 3 — Mutação: cada indivíduo é candidato independentemente
+    _t_mut = time.perf_counter()
     for idx, ind in enumerate(offspring):
         before = list(ind)
         happened = random.random() < mut_pb
@@ -326,11 +334,18 @@ def _gen_loop(
             ind.fitness = None
         if logger is not None:
             logger.log_mutation(gen, idx, before, list(ind), happened)
+    if logger is not None:
+        logger._phase_times["mutacao"]  = logger._phase_times.get("mutacao", 0.0)  + (time.perf_counter() - _t_mut)
+        logger._phase_counts["mutacao"] = logger._phase_counts.get("mutacao", 0)   + 1
 
     # 4 — Avaliação lazy: avalia somente quem foi modificado (fitness == None)
+    _t_eval = time.perf_counter()
     for ind in offspring:
         if ind.fitness is None:
             ind.fitness = evaluate(ind, X, y)
+    if logger is not None:
+        logger._phase_times["avaliacao"]  = logger._phase_times.get("avaliacao", 0.0)  + (time.perf_counter() - _t_eval)
+        logger._phase_counts["avaliacao"] = logger._phase_counts.get("avaliacao", 0)   + 1
 
     return offspring
 
@@ -387,8 +402,11 @@ def run_ga(
     population = create_seeded_pop(n_pop)
 
     # Avaliação inicial: todos os indivíduos precisam de fitness antes do 1º torneio
+    _t_eval0 = time.perf_counter()
     for ind in population:
         ind.fitness = evaluate(ind, X_train, y_train)
+    _ga_logger._phase_times["avaliacao"]  = time.perf_counter() - _t_eval0
+    _ga_logger._phase_counts["avaliacao"] = 1
 
     # Melhor indivíduo global: copiado para não ser sobrescrito pelo loop geracional
     best_ind = copy.copy(max(population, key=lambda ind: ind.fitness))  # type: ignore[arg-type]
