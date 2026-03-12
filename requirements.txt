@@ -4,3 +4,4 @@ numpy
 deap
 scikit-learn
 pytest
+python-dotenv

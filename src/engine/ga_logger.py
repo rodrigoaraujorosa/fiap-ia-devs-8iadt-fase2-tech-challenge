@@ -15,8 +15,17 @@ import logging
 import os
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+load_dotenv()  # carrega .env a partir da raiz do projeto (ou qualquer diretório pai)
+
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _LOGS_DIR = os.path.join(_PROJECT_ROOT, "logs")
+
+_LOG_LEVEL_MAP = {"DEBUG": logging.DEBUG, "INFO": logging.INFO}
+_FILE_LOG_LEVEL = _LOG_LEVEL_MAP.get(
+    os.getenv("GA_LOG_LEVEL", "INFO").upper(), logging.INFO
+)
 
 # Nomes dos genes na ordem do cromossomo
 GENE_NAMES = [
@@ -67,7 +76,7 @@ class GALogger:
         self._logger.handlers.clear()
 
         fh = logging.FileHandler(self.log_file, encoding="utf-8")
-        fh.setLevel(logging.DEBUG)
+        fh.setLevel(_FILE_LOG_LEVEL)
         fmt = logging.Formatter(
             "%(asctime)s [%(levelname)-5s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
