@@ -121,7 +121,7 @@ def main():
     print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta:>{target_cv:.4f})...")
     t0 = time.time()
     try:
-        best = run_ga(
+        best, _ga_logger = run_ga(
             X_train, y_train,
             n_pop=args.n_pop,
             target_improvement=args.target_improvement,
@@ -186,9 +186,25 @@ def main():
             print(f"      {'Original (Fase 1)':<30} {acc_orig:>20.4f}")
             print(f"      {'Otimizado (AG)':<30} {acc_opt:>20.4f}   ({delta:+.4f})")
             print("\n      — Relatório: Modelo original (Fase 1) —")
-            print(classification_report(y_test, y_pred_orig, target_names=["Não diabético", "Diabético"]))
+            report_orig_str = classification_report(y_test, y_pred_orig, target_names=["Não diabético", "Diabético"])
+            print(report_orig_str)
             print("      — Relatório: Modelo otimizado (AG) —")
-            print(classification_report(y_test, y_pred_opt, target_names=["Não diabético", "Diabético"]))
+            report_opt_str = classification_report(y_test, y_pred_opt, target_names=["Não diabético", "Diabético"])
+            print(report_opt_str)
+            summary_path = _ga_logger.log_comparison_summary(
+                best_ind=best,
+                cv_fitness=get_fitness(best, args.algorithm),
+                params=params,
+                model_path=model_path,
+                acc_optimized=acc_opt,
+                report_optimized_str=report_opt_str,
+                acc_original=acc_orig,
+                report_original_str=report_orig_str,
+                gen=getattr(_ga_logger, 'last_gen', 0),
+                elapsed=elapsed,
+                meta_atingida=goal_reached,
+            )
+            print(f"      Resumo salvo em: {os.path.normpath(summary_path)}")
         else:
             print(f"      Modelo original não encontrado em: {os.path.normpath(original_model_path)}")
     else:

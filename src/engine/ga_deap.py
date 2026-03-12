@@ -301,4 +301,4 @@ def run_ga(
         meta_atingida=round(best_ind.fitness.values[0], 4) > target_cv,
         best_ind=best_ind,
     )
-    return hof[0]
+    return hof[0], _ga_logger

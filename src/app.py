@@ -287,6 +287,7 @@ def run_ga_streaming(
             "mean_fitness": sum(float(i.fitness) for i in population) / len(population),  # type: ignore[arg-type]
             "target_cv": target_cv,
             "done": False,
+            "_ga_logger": _ga_logger,
         }
 
         for gen in range(1, max_gen + 1):
@@ -317,6 +318,7 @@ def run_ga_streaming(
                 "mean_fitness": mean_f,
                 "target_cv": target_cv,
                 "done": done,
+                "_ga_logger": _ga_logger,
             }
 
             if done:
@@ -394,6 +396,7 @@ ph_status.metric("Status", "Aguardando")
 # --------------------------------------------------------------------------------
 chart_col, params_col = st.columns([3, 1])
 ph_chart = chart_col.empty()
+ph_timer = chart_col.empty()
 with params_col:
     st.markdown("**🏅 Melhor indivíduo**")
     ph_bar    = st.empty()
@@ -425,6 +428,7 @@ if start:
     all_explore_df: list[pd.DataFrame] = []
     # Preserva o último estado emitido pelo gerador para o bloco de resultado final
     last_stats: dict | None = None
+    t0_exec = datetime.now()
 
     for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement,
                                    cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb):
@@ -473,6 +477,16 @@ if start:
             )
         )
         ph_chart.altair_chart((chart + rule).properties(height=280), width="stretch")
+
+        # Timer de execução em tempo real
+        now = datetime.now()
+        elapsed_sec = int((now - t0_exec).total_seconds())
+        h, rem = divmod(elapsed_sec, 3600)
+        m, s   = divmod(rem, 60)
+        ph_timer.caption(
+            f"⏱️ Início: {t0_exec.strftime('%d/%m/%Y %H:%M:%S')}  "
+            f"· Tempo decorrido: {h:02d}:{m:02d}:{s:02d}"
+        )
 
         # Decodifica e exibe os hiperparâmetros do melhor indivíduo encontrado até agora
         params = decode(best_ind)
@@ -665,5 +679,33 @@ if start:
                     report_opt_df.style.format("{:.4f}", na_rep="—"),
                     width="stretch",
                 )
+
+            # Grava o arquivo de resumo de comparação em logs/
+            report_orig_str = classification_report(
+                y_test,
+                y_pred_orig,
+                target_names=["Não diabético", "Diabético"],
+            ) if acc_orig is not None else None
+            report_opt_str = classification_report(
+                y_test,
+                y_pred_opt,
+                target_names=["Não diabético", "Diabético"],
+            )
+            _logger = last_stats.get("_ga_logger")
+            if _logger is not None:
+                summary_path = _logger.log_comparison_summary(
+                    best_ind=best_ind,
+                    cv_fitness=best_fit,
+                    params=params,
+                    model_path=model_path,
+                    acc_optimized=acc_opt,
+                    report_optimized_str=report_opt_str,
+                    acc_original=acc_orig,
+                    report_original_str=report_orig_str,
+                    gen=getattr(_logger, 'last_gen', gen),
+                    elapsed=0.0,
+                    meta_atingida=last_stats["done"],
+                )
+                st.caption(f"📄 Resumo salvo em: `{os.path.normpath(summary_path)}`")
         else:
             st.info("ℹ️ Modelo não exportado: a meta de CV accuracy não foi atingida.")

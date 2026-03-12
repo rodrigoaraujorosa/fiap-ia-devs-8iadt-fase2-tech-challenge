@@ -66,6 +66,7 @@ class GALogger:
     def __init__(self, algorithm: str):
         os.makedirs(_LOGS_DIR, exist_ok=True)
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self._run_id = run_id
         self.log_file = os.path.join(_LOGS_DIR, f"ga_{algorithm}_{run_id}.log")
         self._algorithm = algorithm
 
@@ -115,6 +116,7 @@ class GALogger:
         meta_atingida: bool,
         best_ind=None,
     ):
+        self.last_gen = gen  # persiste para uso posterior (ex.: log_comparison_summary)
         genes_str = (
             f" | genes=[{_decode_genes(best_ind)}]" if best_ind is not None else ""
         )
@@ -230,3 +232,101 @@ class GALogger:
             self._logger.debug(
                 f"[MUTATION   ] gen={gen} | ind={ind_idx:>2} | MUT=NAO"
             )
+
+    # ------------------------------------------------------------------
+    # Resumo final de comparação
+    # ------------------------------------------------------------------
+
+    def log_comparison_summary(
+        self,
+        best_ind,
+        cv_fitness: float,
+        params: dict,
+        model_path: str,
+        acc_optimized: float,
+        report_optimized_str: str,
+        acc_original: float | None,
+        report_original_str: str | None,
+        gen: int,
+        elapsed: float,
+        meta_atingida: bool,
+    ) -> str:
+        """Grava um arquivo de resumo legível comparando o modelo original
+        (Fase 1) com o modelo otimizado pelo AG.
+
+        Usa I/O direto (``open``), independente dos handlers do módulo
+        ``logging`` (que podem já ter sido fechados por ``log_run_end``).
+
+        Returns:
+            Caminho absoluto do arquivo de resumo criado.
+        """
+        summary_path = os.path.join(
+            _LOGS_DIR, f"summary_{self._algorithm}_{self._run_id}.txt"
+        )
+        SEP  = "=" * 80
+        SEP2 = "-" * 80
+        lines = [
+            SEP,
+            "  RELATÓRIO FINAL — Comparação entre modelo original (Fase 1) e modelo AG",
+            SEP,
+            f"  Algoritmo        : {self._algorithm}",
+            f"  Timestamp        : {self._run_id}",
+            f"  Duração          : {elapsed:.1f}s",
+            f"  Gerações         : {gen}",
+            f"  Meta atingida    : {'SIM' if meta_atingida else 'NAO'}",
+            "",
+            SEP2,
+            "  Melhor indivíduo — hiperparâmetros otimizados",
+            SEP2,
+        ]
+        for k, v in params.items():
+            lines.append(f"  {k:<24}: {v}")
+        lines += [
+            f"  {'CV accuracy (treino, 5-fold)':<24}: {cv_fitness:.4f}",
+            "",
+            SEP2,
+            "  Avaliação no conjunto de teste",
+            SEP2,
+            f"  {'Modelo':<35} {'Acurácia':>10}",
+            f"  {'-'*47}",
+        ]
+        if acc_original is not None:
+            delta = acc_optimized - acc_original
+            lines.append(f"  {'Original (Fase 1)':<35} {acc_original:>10.4f}")
+            lines.append(f"  {'Otimizado (AG)':<35} {acc_optimized:>10.4f}   ({delta:+.4f})")
+        else:
+            lines.append(f"  {'Original (Fase 1)':<35} {'N/D':>10}")
+            lines.append(f"  {'Otimizado (AG)':<35} {acc_optimized:>10.4f}")
+        lines += [
+            "",
+            SEP2,
+            "  Relatório de classificação — Modelo original (Fase 1)",
+            SEP2,
+        ]
+        if report_original_str is not None:
+            for ln in report_original_str.splitlines():
+                lines.append(f"  {ln}")
+        else:
+            lines.append("  (modelo original não disponível)")
+        lines += [
+            "",
+            SEP2,
+            "  Relatório de classificação — Modelo otimizado (AG)",
+            SEP2,
+        ]
+        for ln in report_optimized_str.splitlines():
+            lines.append(f"  {ln}")
+        lines += [
+            "",
+            SEP2,
+            "  Arquivos gerados",
+            SEP2,
+            f"  Modelo exportado : {os.path.normpath(model_path)}",
+            f"  Log de execução  : {os.path.normpath(self.log_file)}",
+            f"  Este resumo      : {os.path.normpath(summary_path)}",
+            SEP,
+            "",
+        ]
+        with open(summary_path, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(lines))
+        return summary_path

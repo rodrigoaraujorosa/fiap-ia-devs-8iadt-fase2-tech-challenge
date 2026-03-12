@@ -441,4 +441,4 @@ def run_ga(
         meta_atingida=round(float(best_ind.fitness), 4) > target_cv,  # type: ignore[arg-type]
         best_ind=best_ind,
     )
-    return best_ind
+    return best_ind, _ga_logger # type: ignore
