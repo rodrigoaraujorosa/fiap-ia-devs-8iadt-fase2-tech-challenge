@@ -128,7 +128,7 @@ def run_ga(
     X_train,
     y_train,
     n_pop=10,
-    target_improvement: float = 0.0,
+    target_improvement: float = 0.000,
     cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
@@ -150,6 +150,8 @@ def run_ga(
     -------
     hof[0] : Individual — indivíduo com maior fitness já visto
     """
+    print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.3f}, "
+          f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 

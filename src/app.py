@@ -218,7 +218,7 @@ def run_ga_streaming(
     X_train, y_train,
     n_pop: int,
     max_gen: int,
-    target_improvement: float = 0.0,
+    target_improvement: float = 0.000,
     cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
@@ -250,7 +250,7 @@ def run_ga_streaming(
             - ``target_cv``   (float) — meta de CV accuracy a ser superada;
             - ``done``        (bool)  — True se a meta já foi atingida.
     """
-    print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.2f}, "
+    print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.3f}, "
           f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
@@ -315,10 +315,10 @@ with st.sidebar:
     max_gen = st.slider(
         "Máx. gerações", min_value=20, max_value=300, value=100, step=20
     )
-    target_improvement = st.slider(
+    target_improvement = round(st.slider(
         "Melhoria alvo (%)", min_value=0.0, max_value=27.0, value=0.0, step=0.5,
         help=f"Percentual acima de {PHASE1_CV_ACCURACY:.4f} (GridSearch Fase 1) que o AG deve atingir.",
-    ) / 100.0
+    ) / 100.0, 3)
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
     st.subheader("🔬 Operadores genéticos")
     cx_pb = st.slider(
@@ -336,7 +336,7 @@ with st.sidebar:
     st.divider()
     st.info(
         f"**Meta base:** {PHASE1_CV_ACCURACY:.4f} *(GridSearch — Fase 1)*  \n"
-        f"**Meta atual:** CV accuracy > **{target_cv:.4f}** (+{target_improvement*100:.1f}%)"
+        f"**Meta atual:** CV accuracy > **{target_cv:.4f}** (+{target_improvement*100:.2f}%)"
     )
     start = st.button("▶ Iniciar AG", type="primary", width="stretch")
 
