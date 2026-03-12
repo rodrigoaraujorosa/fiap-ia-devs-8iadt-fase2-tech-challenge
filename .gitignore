@@ -161,3 +161,6 @@ tmp/
 config/
 Makefile
 setup.*
+
+# Ignore imagens
+images/

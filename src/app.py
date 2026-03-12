@@ -23,6 +23,11 @@ import time
 from datetime import datetime
 
 import altair as alt
+import matplotlib
+matplotlib.use("Agg")  # backend sem GUI, seguro para uso em threads do Streamlit
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib.ticker as mticker
 import pandas as pd
 import streamlit as st
 from sklearn.ensemble import RandomForestClassifier
@@ -214,6 +219,95 @@ def make_explore_chart(df: pd.DataFrame) -> alt.VConcatChart:
         panels.append(panel)
 
     return alt.vconcat(*panels, spacing=6).resolve_scale(color="shared")
+
+
+def save_result_image(
+    gen_idx: list[int],
+    hist_best: list[float],
+    hist_mean: list[float],
+    target_cv: float,
+    params: dict,
+    cv_fitness: float,
+    test_acc: float,
+    acc_orig: float | None,
+    algorithm: str,
+    run_id: str,
+) -> str:
+    """Gera e salva uma figura resumo em images/ quando a meta do AG é atingida.
+
+    A figura contém três painéis:
+      1. Evolução do fitness (melhor e médio) por geração
+      2. Hiperparâmetros do melhor indivíduo
+      3. Comparação de acurácia: Original vs. Otimizado
+
+    Returns:
+        Caminho absoluto do arquivo PNG salvo.
+    """
+    images_dir = os.path.join(os.path.dirname(__file__), "..", "images")
+    os.makedirs(images_dir, exist_ok=True)
+    img_path = os.path.join(images_dir, f"resultado_{algorithm}_{run_id}.png")
+
+    fig = plt.figure(figsize=(14, 8), constrained_layout=True)
+    fig.suptitle(
+        f"Algoritmo Genético — Resultado Final ({algorithm})  |  "
+        f"{datetime.now().strftime('%d/%m/%Y %H:%M')}",
+        fontsize=13, fontweight="bold",
+    )
+    gs = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[2, 1])
+
+    # Painel 1 — evolução do fitness
+    ax1 = fig.add_subplot(gs[0, :])
+    ax1.plot(gen_idx, hist_best, label="Melhor fitness", linewidth=2, color="#2196F3")
+    ax1.plot(gen_idx, hist_mean, label="Fitness médio",  linewidth=1.5, color="#9E9E9E", linestyle="--")
+    ax1.axhline(target_cv, color="orange", linewidth=1.5, linestyle=":", label=f"Meta ({target_cv:.4f})")
+    ax1.set_xlabel("Geração")
+    ax1.set_ylabel("CV Accuracy")
+    ax1.set_title("Evolução do Fitness")
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.4f}"))
+
+    # Painel 2 — hiperparâmetros
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax2.axis("off")
+    rows = [[k, str(v)] for k, v in params.items()]
+    rows.append(["CV accuracy (treino)", f"{cv_fitness:.4f}"])
+    tbl = ax2.table(
+        cellText=rows,
+        colLabels=["Hiperparâmetro", "Valor"],
+        cellLoc="center",
+        loc="center",
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(9)
+    tbl.scale(1, 1.35)
+    ax2.set_title("Melhor indivíduo", pad=8)
+
+    # Painel 3 — comparação de acurácia
+    ax3 = fig.add_subplot(gs[1, 1])
+    labels  = ["Original (Fase 1)", "Otimizado (AG)"]
+    values  = [acc_orig if acc_orig is not None else 0.0, test_acc]
+    colors  = ["#9E9E9E", "#4CAF50"]
+    bars = ax3.bar(labels, values, color=colors, width=0.45)
+    ax3.set_ylim(max(0, min(values) - 0.05), min(1.0, max(values) + 0.05))
+    ax3.set_ylabel("Acurácia no teste")
+    ax3.set_title("Comparação de acurácia")
+    ax3.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.4f}"))
+    ax3.grid(True, axis="y", alpha=0.3)
+    for bar, val in zip(bars, values):
+        ax3.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.002,
+            f"{val:.4f}",
+            ha="center", va="bottom", fontsize=10, fontweight="bold",
+        )
+    if acc_orig is not None:
+        delta = test_acc - acc_orig
+        ax3.set_xlabel(f"Δ = {delta:+.4f}", fontsize=10)
+
+    fig.savefig(img_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return img_path
 
 
 def run_ga_streaming(
@@ -707,5 +801,21 @@ if start:
                     meta_atingida=last_stats["done"],
                 )
                 st.caption(f"📄 Resumo salvo em: `{os.path.normpath(summary_path)}`")
+
+            # Salva figura resumo em images/
+            _run_id = getattr(_logger, '_run_id', export_time.strftime('%Y%m%d_%H%M%S')) if _logger else export_time.strftime('%Y%m%d_%H%M%S')
+            img_path = save_result_image(
+                gen_idx=gen_idx,
+                hist_best=hist_best,
+                hist_mean=hist_mean,
+                target_cv=last_stats["target_cv"],
+                params=params,
+                cv_fitness=best_fit,
+                test_acc=float(acc_opt),
+                acc_orig=float(acc_orig) if acc_orig is not None else None,
+                algorithm="ga_handmade",
+                run_id=_run_id,
+            )
+            st.caption(f"🖼️ Figura salva em: `{os.path.normpath(img_path)}`")
         else:
             st.info("ℹ️ Modelo não exportado: a meta de CV accuracy não foi atingida.")
