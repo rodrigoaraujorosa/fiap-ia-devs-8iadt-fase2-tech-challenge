@@ -537,53 +537,96 @@ if start:
         )
 
         # --------------------------------------------------------------------------------
-        # Salvar modelo com pickle
+        # Salvar modelo com pickle — apenas quando a meta foi atingida
         # --------------------------------------------------------------------------------
-        st.subheader("💾 Exportação do modelo")
-        # Garante que o diretório models/ existe antes de tentar escrever o arquivo
-        models_dir = os.path.join(os.path.dirname(__file__), "..", "models")
-        os.makedirs(models_dir, exist_ok=True)
-        export_time = datetime.now()
-        model_filename = f"model_diabetes_rf_optimized_{export_time.strftime('%y%m%d%H%M')}.pkl"
-        model_path = os.path.join(models_dir, model_filename)
-        # Serializa o modelo treinado em formato binário pickle
-        with open(model_path, "wb") as f:
-            pickle.dump(clf, f)
-        st.success(
-            f"Modelo salvo em: `{os.path.normpath(model_path)}`  \n"
-            f"Exportado em: **{export_time.strftime('%d/%m/%Y')}** às **{export_time.strftime('%H:%M')}**"
-        )
+        if last_stats["done"]:
+            st.subheader("💾 Exportação do modelo")
+            # Garante que o diretório models/ existe antes de tentar escrever o arquivo
+            models_dir = os.path.join(os.path.dirname(__file__), "..", "models")
+            os.makedirs(models_dir, exist_ok=True)
+            export_time = datetime.now()
+            model_filename = f"model_diabetes_rf_optimized_{export_time.strftime('%y%m%d%H%M')}.pkl"
+            model_path = os.path.join(models_dir, model_filename)
+            # Serializa o modelo treinado em formato binário pickle
+            with open(model_path, "wb") as f:
+                pickle.dump(clf, f)
+            st.success(
+                f"Modelo salvo em: `{os.path.normpath(model_path)}`  \n"
+                f"Exportado em: **{export_time.strftime('%d/%m/%Y')}** às **{export_time.strftime('%H:%M')}**"
+            )
 
-        # --------------------------------------------------------------------------------
-        # Validar modelo carregado do disco
-        # --------------------------------------------------------------------------------
-        st.subheader("🔍 Validação do modelo salvo")
-        # Recarrega o arquivo pickle do disco para confirmar que a serialização
-        # foi bem-sucedida e que o modelo produz as mesmas predições
-        with open(model_path, "rb") as f:
-            clf_loaded = pickle.load(f)
-        y_pred_loaded = clf_loaded.predict(X_test)
-        test_acc_loaded = accuracy_score(y_test, y_pred_loaded)
+            # --------------------------------------------------------------------------------
+            # Comparação: modelo otimizado (AG) vs. modelo original (Fase 1)
+            # --------------------------------------------------------------------------------
+            st.subheader("🔍 Comparação com o modelo original (Fase 1)")
 
-        v1, v2 = st.columns(2)
-        v1.metric("Acurácia (modelo carregado)", f"{test_acc_loaded:.4f}")
-        # Verificação bit-a-bit: as predições do modelo recarregado devem ser
-        # idênticas às do modelo original treinado nesta sessão
-        match = (y_pred_loaded == y_pred).all()
-        v2.metric("Predições idênticas ao original", "✅ Sim" if match else "❌ Não")
+            original_model_path = os.path.join(os.path.dirname(__file__), "..", "models", "model_diabetes_rf_original.pkl")
 
-        report_loaded = classification_report(
-            y_test,
-            y_pred_loaded,
-            target_names=["Não diabético", "Diabético"],
-            output_dict=True,
-        )
-        report_loaded_df = (
-            pd.DataFrame(report_loaded)
-            .T.drop(columns=["support"], errors="ignore")
-            .astype(float)
-        )
-        st.dataframe(
-            report_loaded_df.style.format("{:.4f}", na_rep="—"),
-            width="stretch",
-        )
+            # Recarrega o modelo otimizado salvo para confirmar integridade da serialização
+            with open(model_path, "rb") as f:
+                clf_optimized = pickle.load(f)
+
+            col_orig, col_opt = st.columns(2)
+
+            # — Modelo original da Fase 1 —
+            with col_orig:
+                st.markdown("#### 📦 Modelo original (Fase 1)")
+                if os.path.exists(original_model_path):
+                    with open(original_model_path, "rb") as f:
+                        clf_original = pickle.load(f)
+                    y_pred_orig = clf_original.predict(X_test)
+                    acc_orig = accuracy_score(y_test, y_pred_orig)
+                    st.metric("Acurácia no teste", f"{acc_orig:.4f}")
+                    # Espaçador para compensar a linha do delta no modelo otimizado e manter os relatórios alinhados
+                    st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
+
+                    report_orig = classification_report(
+                        y_test,
+                        y_pred_orig,
+                        target_names=["Não diabético", "Diabético"],
+                        output_dict=True,
+                    )
+                    report_orig_df = (
+                        pd.DataFrame(report_orig)
+                        .T.drop(columns=["support"], errors="ignore")
+                        .astype(float)
+                    )
+                    st.dataframe(
+                        report_orig_df.style.format("{:.4f}", na_rep="—"),
+                        width="stretch",
+                    )
+                else:
+                    acc_orig = None
+                    st.warning(
+                        f"Modelo original não encontrado em: `{os.path.normpath(original_model_path)}`"
+                    )
+
+            # — Modelo otimizado pelo AG —
+            with col_opt:
+                st.markdown("#### 🧬 Modelo otimizado (AG)")
+                y_pred_opt = clf_optimized.predict(X_test)
+                acc_opt = accuracy_score(y_test, y_pred_opt)
+                delta_acc = round(acc_opt - acc_orig, 4) if acc_orig is not None else None
+                st.metric(
+                    "Acurácia no teste",
+                    f"{acc_opt:.4f}",
+                    delta=f"{delta_acc:+.4f} vs. original" if delta_acc is not None else None,
+                )
+
+                report_opt = classification_report(
+                    y_test,
+                    y_pred_opt,
+                    target_names=["Não diabético", "Diabético"],
+                    output_dict=True,
+                )
+                report_opt_df = (
+                    pd.DataFrame(report_opt)
+                    .T.drop(columns=["support"], errors="ignore")
+                    .astype(float)
+                )
+                st.dataframe(
+                    report_opt_df.style.format("{:.4f}", na_rep="—"),
+                    width="stretch",
+                )
+        else:
+            st.info("ℹ️ Modelo não exportado: a meta de CV accuracy não foi atingida.")
