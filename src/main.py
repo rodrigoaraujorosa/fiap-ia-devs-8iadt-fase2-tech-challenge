@@ -1,7 +1,9 @@
 import argparse
 import os
+import pickle
 import sys
 import time
+from datetime import datetime
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -114,7 +116,9 @@ def main():
     X_train, X_test, y_train, y_test = load_data(DATA_PATH)
     print(f"      Treino: {X_train.shape[0]} amostras | Teste: {X_test.shape[0]} amostras")
 
-    print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta:>{PHASE1_CV_ACCURACY*(1+args.target_improvement):.4f})...")
+    target_cv = round(PHASE1_CV_ACCURACY * (1 + args.target_improvement), 4)
+
+    print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta:>{target_cv:.4f})...")
     t0 = time.time()
     try:
         best = run_ga(
@@ -144,6 +148,53 @@ def main():
     acc = accuracy_score(y_test, y_pred)
     print(f"      Acurácia no teste: {acc:.4f}\n")
     print(classification_report(y_test, y_pred, target_names=["Não diabético", "Diabético"]))
+
+    # -------------------------------------------------------------------------
+    # [5/5] Exportar modelo e comparar com o original da Fase 1
+    # -------------------------------------------------------------------------
+    goal_reached = get_fitness(best, args.algorithm) > target_cv
+
+    if goal_reached:
+        print("[5/5] Exportando modelo otimizado...")
+        models_dir = os.path.join(os.path.dirname(__file__), "..", "models")
+        os.makedirs(models_dir, exist_ok=True)
+        export_time = datetime.now()
+        model_filename = f"model_diabetes_rf_optimized_{export_time.strftime('%y%m%d%H%M')}.pkl"
+        model_path = os.path.join(models_dir, model_filename)
+        with open(model_path, "wb") as f:
+            pickle.dump(clf, f)
+        print(f"      Modelo salvo em: {os.path.normpath(model_path)}")
+        print(f"      Exportado em: {export_time.strftime('%d/%m/%Y')} às {export_time.strftime('%H:%M')}")
+
+        # Recarrega para confirmar integridade da serialização
+        with open(model_path, "rb") as f:
+            clf_optimized = pickle.load(f)
+
+        print("\n      Comparação com o modelo original (Fase 1):")
+        original_model_path = os.path.join(os.path.dirname(__file__), "..", "models", "model_diabetes_rf_original.pkl")
+
+        if os.path.exists(original_model_path):
+            with open(original_model_path, "rb") as f:
+                clf_original = pickle.load(f)
+            y_pred_orig = clf_original.predict(X_test)
+            acc_orig = accuracy_score(y_test, y_pred_orig)
+            y_pred_opt = clf_optimized.predict(X_test)
+            acc_opt = accuracy_score(y_test, y_pred_opt)
+            delta = acc_opt - acc_orig
+            print(f"      {'Modelo':<30} {'Acurácia no teste':>20}")
+            print(f"      {'-'*52}")
+            print(f"      {'Original (Fase 1)':<30} {acc_orig:>20.4f}")
+            print(f"      {'Otimizado (AG)':<30} {acc_opt:>20.4f}   ({delta:+.4f})")
+            print("\n      — Relatório: Modelo original (Fase 1) —")
+            print(classification_report(y_test, y_pred_orig, target_names=["Não diabético", "Diabético"]))
+            print("      — Relatório: Modelo otimizado (AG) —")
+            print(classification_report(y_test, y_pred_opt, target_names=["Não diabético", "Diabético"]))
+        else:
+            print(f"      Modelo original não encontrado em: {os.path.normpath(original_model_path)}")
+    else:
+        print(f"[5/5] Modelo não exportado: meta de CV accuracy não atingida "
+              f"(melhor: {get_fitness(best, args.algorithm):.4f}, meta: {target_cv:.4f}).")
+
     print("=" * 60)
 
 
