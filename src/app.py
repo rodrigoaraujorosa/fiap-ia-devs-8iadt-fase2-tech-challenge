@@ -291,7 +291,7 @@ def save_result_image(
         cellText=rows,
         colLabels=["Parâmetro", "Valor"],
         cellLoc="center",
-        bbox=[0, 0, 1, 1],  # preenche toda a área dos eixos; título fica fora
+        bbox=[0, 0, 1, 1],  # preenche toda a área dos eixos; título fica fora # type: ignore
     )
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(9)
