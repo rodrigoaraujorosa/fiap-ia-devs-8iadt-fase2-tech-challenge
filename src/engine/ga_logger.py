@@ -134,7 +134,6 @@ class GALogger:
     def log_run_start(
         self,
         n_pop: int,
-        cx_pb: float,
         mut_pb: float,
         mut_indpb: float,
         target_improvement: float,
@@ -144,7 +143,7 @@ class GALogger:
         max_gen_str = str(max_gen) if max_gen is not None else "ilimitado"
         self._logger.info(
             f"[RUN_START  ] algoritmo={self._algorithm} | n_pop={n_pop} | "
-            f"max_gen={max_gen_str} | cx_pb={cx_pb:.2f} | mut_pb={mut_pb:.2f} | "
+            f"max_gen={max_gen_str} | mut_pb={mut_pb:.2f} | "
             f"mut_indpb={mut_indpb:.2f} | "
             f"target_improvement={target_improvement * 100:.2f}% | "
             f"target_cv={target_cv:.4f}"

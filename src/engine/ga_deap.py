@@ -33,7 +33,6 @@ GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, M
 
 MUT_INDPB = 0.5   # probabilidade de mutar cada gene individualmente (↑ para maior diversidade nos genes)
 MUT_PB    = 0.6   # probabilidade de um indivíduo sofrer mutação    (↑ para mais exploração por geração)
-CX_PB     = 1.0   # probabilidade de crossover entre dois indivíduos selecionados
 
 # Peso da penalidade pelo desvio padrão do CV:
 # fitness = mean_cv - CV_STD_PENALTY * std_cv
@@ -151,7 +150,6 @@ def run_ga(
     y_train,
     n_pop=10,
     target_improvement: float = 0.000,
-    cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
 ):
@@ -164,7 +162,6 @@ def run_ga(
     n_pop              : int        — tamanho da população (padrão 10)
     target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
                                       ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
-    cx_pb              : float      — probabilidade de crossover (padrão CX_PB = 1.0)
     mut_pb             : float      — probabilidade de mutação por indivíduo (padrão MUT_PB = 0.6)
     mut_indpb          : float      — probabilidade de mutação por gene (padrão MUT_INDPB = 0.5)
 
@@ -173,13 +170,13 @@ def run_ga(
     hof[0] : Individual — indivíduo com maior fitness já visto
     """
     print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.3f}, "
-          f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
+          f"mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
     _ga_logger = GALogger("ga_deap")
     _ga_logger.log_run_start(
-        n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+        n_pop=n_pop, mut_pb=mut_pb, mut_indpb=mut_indpb,
         target_improvement=target_improvement, target_cv=target_cv,
     )
     _t0 = time.time()
@@ -247,7 +244,7 @@ def run_ga(
                 before2 = list(offspring[i])
                 # Pais idênticos: crossover não geraria diversidade — pula o operador
                 identical = before1 == before2
-                if (not identical) and random.random() < cx_pb:
+                if not identical:
                     offspring[i - 1], offspring[i] = toolbox.mate( # type: ignore
                         offspring[i - 1], offspring[i]
                     )

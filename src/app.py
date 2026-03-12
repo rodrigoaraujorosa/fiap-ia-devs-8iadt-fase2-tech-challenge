@@ -37,7 +37,6 @@ from sklearn.model_selection import train_test_split
 sys.path.insert(0, os.path.dirname(__file__))
 
 from engine.ga_rf_optimizer import (
-    CX_PB,
     MUT_INDPB,
     MUT_PB,
     PHASE1_CV_ACCURACY,
@@ -234,7 +233,6 @@ def save_result_image(
     run_id: str,
     n_pop: int = 0,
     max_gen: int = 0,
-    cx_pb: float = 0.0,
     mut_pb: float = 0.0,
     mut_indpb: float = 0.0,
 ) -> str:
@@ -280,7 +278,6 @@ def save_result_image(
     rows += [
         ["Tamanho da população", str(n_pop)],
         ["Máx. gerações", str(max_gen)],
-        ["Prob. cruzamento (CX_PB)", f"{cx_pb:.2f}"],
         ["Prob. mutação (MUT_PB)", f"{mut_pb:.2f}"],
         ["Prob. por gene (MUT_INDPB)", f"{mut_indpb:.2f}"],
         ["── Melhor indivíduo ──", ""],
@@ -296,7 +293,7 @@ def save_result_image(
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(9)
     # Destaca as linhas de cabeçalho de seção
-    for row_idx in [1, 7]:  # linhas dos separadores (1-based, após header)
+    for row_idx in [1, 6]:  # linhas dos separadores (1-based, após header)
         for col in range(2):
             tbl[row_idx, col].set_facecolor("#E3F2FD")
             tbl[row_idx, col].set_text_props(fontweight="bold")
@@ -334,7 +331,6 @@ def run_ga_streaming(
     n_pop: int,
     max_gen: int,
     target_improvement: float = 0.000,
-    cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
 ):
@@ -351,7 +347,6 @@ def run_ga_streaming(
         max_gen: Número máximo de gerações a executar.
         target_improvement: Percentual de melhoria desejado acima de PHASE1_CV_ACCURACY
             (ex.: 0.50 para +0.5%). Default 0.0 mantém a meta base.
-        cx_pb:     Probabilidade de cruzamento entre dois indivíduos.
         mut_pb:    Probabilidade de um indivíduo sofrer mutação.
         mut_indpb: Probabilidade de mutação de cada gene individualmente.
 
@@ -370,7 +365,7 @@ def run_ga_streaming(
 
     _ga_logger = GALogger("ga_rf_optimizer")
     _ga_logger.log_run_start(
-        n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+        n_pop=n_pop, mut_pb=mut_pb, mut_indpb=mut_indpb,
         target_improvement=target_improvement, target_cv=target_cv, max_gen=max_gen,
     )
     _t0 = time.time()
@@ -408,7 +403,7 @@ def run_ga_streaming(
             _ga_logger.log_generation_start(gen)
             population = _gen_loop(
                 population, X_train, y_train,
-                cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+                mut_pb=mut_pb, mut_indpb=mut_indpb,
                 gen=gen, logger=_ga_logger,
             )
 
@@ -471,10 +466,6 @@ with st.sidebar:
     ) / 100.0, 3)
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
     st.subheader("🔬 Operadores genéticos")
-    cx_pb = st.slider(
-        "CX_PB — Prob. cruzamento", min_value=0.0, max_value=1.0, value=float(CX_PB), step=0.05,
-        help="Probabilidade de dois indivíduos realizarem cruzamento.",
-    )
     mut_pb = st.slider(
         "MUT_PB — Prob. mutação", min_value=0.0, max_value=1.0, value=float(MUT_PB), step=0.05,
         help="Probabilidade de um indivíduo sofrer mutação.",
@@ -544,7 +535,7 @@ if start:
     t0_exec = datetime.now()
 
     for stats in run_ga_streaming(X_train, y_train, n_pop, max_gen, target_improvement,
-                                   cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb):
+                                   mut_pb=mut_pb, mut_indpb=mut_indpb):
         last_stats = stats
         gen      = stats["gen"]
         best_fit = stats["best_fitness"]
@@ -836,7 +827,6 @@ if start:
                 run_id=_run_id,
                 n_pop=n_pop,
                 max_gen=max_gen,
-                cx_pb=cx_pb,
                 mut_pb=mut_pb,
                 mut_indpb=mut_indpb,
             )

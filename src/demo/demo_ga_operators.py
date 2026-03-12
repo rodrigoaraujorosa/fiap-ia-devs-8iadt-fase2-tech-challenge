@@ -17,7 +17,6 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.ga_rf_optimizer import (
-    CX_PB,
     MUT_INDPB,
     MUT_PB,
     Individual,
@@ -128,12 +127,11 @@ print(f"  → Os pais selecionados têm fitness médio mais alto que a populaç�
 # ---------------------------------------------------------------------------
 # PASSO 2 — Crossover em pares consecutivos.
 # Pares são formados por índices (0,1), (2,3), (4,5).
-# Cada par tem CX_PB de chance de cruzar; se não cruzar, os filhos
-# são cópias diretas dos pais (sem alteração de genes).
+# O crossover sempre ocorre, exceto quando os pais são idênticos.
 # ---------------------------------------------------------------------------
 print(f"\n{SEP}")
-print(f"  PASSO 2 — Crossover de Dois Pontos  (CX_PB={CX_PB})")
-print(f"  Pares consecutivos (0+1, 2+3, 4+5) têm {int(CX_PB*100)}% de chance de cruzar.")
+print(f"  PASSO 2 — Crossover de Dois Pontos")
+print(f"  Crossover sempre ocorre para pares não-idênticos.")
 print(f"  Genes marcados com (*) foram herdados do outro pai.")
 print(SEP)
 
@@ -144,9 +142,9 @@ for i in range(1, len(offspring), 2):
     # Registra os genes antes do crossover para comparar depois com _fmt_diff.
     pai1_genes = list(offspring[i - 1])
     pai2_genes = list(offspring[i])
-    aplicou = random.random() < CX_PB  # decide estocàsticamente se o par cruza
+    aplicou = pai1_genes != pai2_genes  # pula somente se os pais forem idênticos
 
-    print(f"\n  Par ({i-1}, {i})  {'→ CROSSOVER APLICADO' if aplicou else '→ sem crossover (chance não atingida)'}")
+    print(f"\n  Par ({i-1}, {i})  {'\u2192 CROSSOVER APLICADO' if aplicou else '\u2192 pais idênticos — crossover ignorado'}")
     print(f"  {'Pai ' + str(i-1):<12}: {_fmt(pai1_genes)}")
     print(f"  {'Pai ' + str(i):<12}: {_fmt(pai2_genes)}")
 
@@ -160,8 +158,8 @@ for i in range(1, len(offspring), 2):
         print(f"  {'Child ' + str(i-1):<12}: {_fmt_diff(pai1_genes, offspring[i-1])}")
         print(f"  {'Child ' + str(i):<12}: {_fmt_diff(pai2_genes, offspring[i])}")
     else:
-        print(f"  {'Child ' + str(i-1):<12}: {_fmt(offspring[i-1])}  (inalterado)")
-        print(f"  {'Child ' + str(i):<12}: {_fmt(offspring[i])}  (inalterado)")
+        print(f"  {'Child ' + str(i-1):<12}: {_fmt(offspring[i-1])}  (idênticos — sem alteração)")
+        print(f"  {'Child ' + str(i):<12}: {_fmt(offspring[i])}  (idênticos — sem alteração)")
 
 print(f"\n  Total de crossovers aplicados: {n_crossovers} de {len(offspring)//2} pares")
 

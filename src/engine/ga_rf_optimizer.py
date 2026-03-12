@@ -45,7 +45,6 @@ GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, M
 # genes de um indivíduo são alterados a cada aplicação do operador.
 MUT_INDPB = 0.5   # chance de cada gene ser mutado individualmente
 MUT_PB    = 0.6   # chance de um indivíduo ser submetido à mutação
-CX_PB     = 1.0   # chance de dois indivíduos realizarem crossover
 
 # Penalidade de estabilidade na função de aptidão.
 # Subtrair um múltiplo do desvio padrão do CV penaliza soluções instáveis
@@ -257,7 +256,6 @@ def _gen_loop(
     population: list[Individual],
     X,
     y,
-    cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
     gen: int = 0,
@@ -271,8 +269,9 @@ def _gen_loop(
     Passos
     ------
     1. Seleção   — gera offspring do mesmo tamanho da população via torneio.
-    2. Crossover — aplica crossover de 2 pontos em pares consecutivos com P = cx_pb.
-                   O fitness dos filhos modificados é invalidado (→ None).
+    2. Crossover — aplica crossover de 2 pontos em todos os pares consecutivos
+                   (exceto quando os pais são idênticos). O fitness dos filhos
+                   modificados é invalidado (→ None).
     3. Mutação   — aplica mutação uniforme em cada indivíduo com P = mut_pb.
                    O fitness do indivíduo mutado é invalidado (→ None).
     4. Avaliação — reavalia apenas os indivíduos com fitness == None,
@@ -283,7 +282,6 @@ def _gen_loop(
     population : list[Individual] — população da geração atual
     X          : array-like       — features de treino
     y          : array-like       — rótulos de treino
-    cx_pb      : float            — probabilidade de crossover (padrão CX_PB)
     mut_pb     : float            — probabilidade de mutação por indivíduo (padrão MUT_PB)
     mut_indpb  : float            — probabilidade de mutação por gene (padrão MUT_INDPB)
 
@@ -308,7 +306,7 @@ def _gen_loop(
         before2 = list(offspring[i])
         # Pais idênticos: crossover não geraria diversidade — pula o operador
         identical = before1 == before2
-        happened = (not identical) and random.random() < cx_pb
+        happened = not identical
         if happened:
             offspring[i - 1], offspring[i] = crossover(offspring[i - 1], offspring[i])
             # Invalida o fitness: os filhos foram modificados e precisam ser reavaliados
@@ -355,7 +353,6 @@ def run_ga(
     y_train,
     n_pop: int = 10,
     target_improvement: float = 0.000,
-    cx_pb: float = CX_PB,
     mut_pb: float = MUT_PB,
     mut_indpb: float = MUT_INDPB,
 ) -> Individual:
@@ -379,7 +376,6 @@ def run_ga(
     n_pop              : int        — tamanho da população (padrão 10)
     target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
                                       ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
-    cx_pb              : float      — probabilidade de crossover (padrão CX_PB = 1.0)
     mut_pb             : float      — probabilidade de mutação por indivíduo (padrão MUT_PB = 0.6)
     mut_indpb          : float      — probabilidade de mutação por gene (padrão MUT_INDPB = 0.5)
 
@@ -388,13 +384,13 @@ def run_ga(
     Individual — indivíduo com o maior fitness observado em toda a execução
     """
     print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.3f}, "
-          f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
+          f"mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
     _ga_logger = GALogger("ga_rf_optimizer")
     _ga_logger.log_run_start(
-        n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+        n_pop=n_pop, mut_pb=mut_pb, mut_indpb=mut_indpb,
         target_improvement=target_improvement, target_cv=target_cv,
     )
     _t0 = time.time()
@@ -427,7 +423,7 @@ def run_ga(
             _ga_logger.log_generation_start(gen)
             population = _gen_loop(
                 population, X_train, y_train,
-                cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
+                mut_pb=mut_pb, mut_indpb=mut_indpb,
                 gen=gen, logger=_ga_logger,
             )
 

@@ -12,7 +12,7 @@ flowchart TD
     E -- Sim --> Z([Retornar melhor indivíduo])
 
     E -- Não --> F[Seleção por Torneio<br/>tournsize=3, k=n_pop]
-    F --> G[Crossover de dois pontos<br/>cx_pb por par]
+    F --> G[Crossover de dois pontos<br/>pares não-idênticos]
     G --> H[Mutação uniforme inteira<br/>mut_pb · mut_indpb por gene]
     G --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
     H --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
@@ -42,7 +42,6 @@ Penalizar o desvio padrão premia modelos acurados e estáveis entre os folds.
 | Parâmetro    | Valor | Descrição                                          |
 |--------------|-------|----------------------------------------------------|
 | `n_pop`              | 10       | Tamanho da população (padrão)                                                    |
-| `cx_pb`              | 1.0      | Probabilidade de crossover entre dois indivíduos *(configurável)*               |
 | `mut_pb`             | 0.6      | Probabilidade de um indivíduo sofrer mutação *(configurável)*                   |
 | `mut_indpb`          | 0.5      | Probabilidade de mutar cada gene individualmente *(configurável)*               |
 | `tournsize`          | 3        | Candidatos por torneio na seleção                                               |
