@@ -51,9 +51,9 @@ def parse_args():
     parser.add_argument(
         "--cx_pb",
         type=float,
-        default=0.7,
+        default=1.0,
         metavar="F",
-        help="Probabilidade de crossover entre dois indivíduos (padrão: 0.7).",
+        help="Probabilidade de crossover entre dois indivíduos (padrão: 1.0).",
     )
     parser.add_argument(
         "--mut_pb",

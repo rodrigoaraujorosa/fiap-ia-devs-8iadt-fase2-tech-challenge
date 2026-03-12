@@ -42,7 +42,7 @@ Penalizar o desvio padrão premia modelos acurados e estáveis entre os folds.
 | Parâmetro    | Valor | Descrição                                          |
 |--------------|-------|----------------------------------------------------|
 | `n_pop`              | 10       | Tamanho da população (padrão)                                                    |
-| `cx_pb`              | 0.7      | Probabilidade de crossover entre dois indivíduos *(configurável)*               |
+| `cx_pb`              | 1.0      | Probabilidade de crossover entre dois indivíduos *(configurável)*               |
 | `mut_pb`             | 0.6      | Probabilidade de um indivíduo sofrer mutação *(configurável)*                   |
 | `mut_indpb`          | 0.5      | Probabilidade de mutar cada gene individualmente *(configurável)*               |
 | `tournsize`          | 3        | Candidatos por torneio na seleção                                               |

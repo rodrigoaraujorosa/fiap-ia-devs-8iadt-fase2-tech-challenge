@@ -45,7 +45,7 @@ GENE_HIGH = [N_ESTIMATORS_HIGH, max(MAX_DEPTH_OPTIONS), MIN_SAMPLES_LEAF_HIGH, M
 # genes de um indivíduo são alterados a cada aplicação do operador.
 MUT_INDPB = 0.5   # chance de cada gene ser mutado individualmente
 MUT_PB    = 0.6   # chance de um indivíduo ser submetido à mutação
-CX_PB     = 0.7   # chance de dois indivíduos realizarem crossover
+CX_PB     = 1.0   # chance de dois indivíduos realizarem crossover
 
 # Penalidade de estabilidade na função de aptidão.
 # Subtrair um múltiplo do desvio padrão do CV penaliza soluções instáveis
@@ -379,7 +379,7 @@ def run_ga(
     n_pop              : int        — tamanho da população (padrão 10)
     target_improvement : float      — melhoria percentual desejada sobre PHASE1_CV_ACCURACY
                                       ex.: 0.10 = meta 10 % acima de 0.7867 → 0.8654
-    cx_pb              : float      — probabilidade de crossover (padrão CX_PB = 0.7)
+    cx_pb              : float      — probabilidade de crossover (padrão CX_PB = 1.0)
     mut_pb             : float      — probabilidade de mutação por indivíduo (padrão MUT_PB = 0.6)
     mut_indpb          : float      — probabilidade de mutação por gene (padrão MUT_INDPB = 0.5)
 
