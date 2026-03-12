@@ -1,5 +1,5 @@
 """
-Demo visual dos três operadores genéticos em conjunto — ga_handmade.py
+Demo visual dos três operadores genéticos em conjunto — ga_rf_optimizer.py
 
 Simula uma geração completa do AG:
     1. Seleção por torneio  — escolhe os pais da próxima geração
@@ -16,7 +16,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from engine.ga_handmade import (
+from engine.ga_rf_optimizer import (
     CX_PB,
     MUT_INDPB,
     MUT_PB,
@@ -86,7 +86,7 @@ random.seed(42)  # garante reprodutibilidade: mesmos resultados a cada execuçã
 # Cabeçalho
 # ---------------------------------------------------------------------------
 print(SEP)
-print("  Demo Completo: Operadores Genéticos em Ação — ga_handmade.py")
+print("  Demo Completo: Operadores Genéticos em Ação — ga_rf_optimizer.py")
 print("  Uma geração completa: Seleção → Crossover → Mutação")
 print(SEP)
 

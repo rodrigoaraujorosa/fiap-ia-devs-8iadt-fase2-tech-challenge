@@ -17,7 +17,7 @@ DATA_PATH = os.path.join(
 )
 
 ALGORITHMS = {
-    "ga_handmade": ("engine.ga_handmade", "Handmade"),
+    "ga_rf_optimizer": ("engine.ga_rf_optimizer", "RF Optimizer"),
     "ga_deap":     ("engine.ga_deap",     "DEAP"),
 }
 
@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument(
         "algorithm",
         choices=ALGORITHMS.keys(),
-        help="Implementação do AG a executar: 'ga_handmade' ou 'ga_deap'.",
+        help="Implementação do AG a executar: 'ga_rf_optimizer' ou 'ga_deap'.",
     )
     parser.add_argument(
         "--n_pop",
@@ -91,7 +91,7 @@ def decode_individual(ind):
 
 def get_fitness(best, algorithm: str) -> float:
     """Normaliza o acesso ao fitness entre as duas implementações.
-    - ga_handmade: best.fitness            (float simples)
+    - ga_rf_optimizer: best.fitness         (float simples)
     - ga_deap:     best.fitness.values[0]  (objeto Fitness do DEAP)
     """
     if algorithm == "ga_deap":

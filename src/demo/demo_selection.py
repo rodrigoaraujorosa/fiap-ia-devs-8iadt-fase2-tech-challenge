@@ -1,5 +1,5 @@
 """
-Demo visual do operador de Seleção por Torneio — ga_handmade.py
+Demo visual do operador de Seleção por Torneio — ga_rf_optimizer.py
 
 A seleção por torneio escolhe k indivíduos da população. Para cada vaga,
 sorteia tournsize=3 candidatos aleatoriamente e elege o de maior fitness.
@@ -16,7 +16,7 @@ from collections import Counter
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from engine.ga_handmade import Individual, selection
+from engine.ga_rf_optimizer import Individual, selection
 
 GENE_LABELS = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_split", "max_features"]
 
@@ -57,7 +57,7 @@ POPULATION = [
 ]
 
 print("=" * 72)
-print("  Demo: Operador de Seleção por Torneio — ga_handmade.py")
+print("  Demo: Operador de Seleção por Torneio — ga_rf_optimizer.py")
 print("  tournsize=3 | k = tamanho da população")
 print("=" * 72)
 

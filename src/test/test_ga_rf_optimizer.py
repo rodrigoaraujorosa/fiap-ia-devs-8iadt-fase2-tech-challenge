@@ -1,7 +1,7 @@
 """
-Testes unitários para src/engine/ga_handmade.py
+Testes unitários para src/engine/ga_rf_optimizer.py
 Execução:
-    pytest src/test/test_ga_handmade.py -v
+    pytest src/test/test_ga_rf_optimizer.py -v
 """
 import copy
 import random
@@ -13,7 +13,7 @@ import pytest
 # Garante que src/ esteja no path independentemente de onde pytest é chamado
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from engine.ga_handmade import (
+from engine.ga_rf_optimizer import (
     GENE_HIGH,
     GENE_LOW,
     GRIDSEARCH_SEED,

@@ -1,5 +1,5 @@
 """
-Demo visual do operador de Crossover (dois pontos) — ga_handmade.py
+Demo visual do operador de Crossover (dois pontos) — ga_rf_optimizer.py
 
 O crossover de dois pontos seleciona aleatoriamente um segmento contíguo
 [cx1, cx2) do indivíduo e troca esse segmento entre os dois pais.
@@ -16,7 +16,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from engine.ga_handmade import Individual, crossover
+from engine.ga_rf_optimizer import Individual, crossover
 
 GENE_LABELS = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_split", "max_features"]
 
@@ -73,7 +73,7 @@ def _find_seed_for_n_changed(n_target: int, parent1: list, parent2: list) -> int
 # pelo menos um extremo sempre permanece em cada pai).
 # ---------------------------------------------------------------------------
 print("=" * 72)
-print("  Demo: Operador de Crossover (dois pontos) — ga_handmade.py")
+print("  Demo: Operador de Crossover (dois pontos) — ga_rf_optimizer.py")
 print("=" * 72)
 print("  Pais usados em todos os exemplos:")
 print(f"  {'Pai 1':<10}: {_fmt(PARENT1)}")

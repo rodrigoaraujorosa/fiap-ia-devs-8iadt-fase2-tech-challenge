@@ -1,5 +1,5 @@
 """
-Demo visual do operador de Mutação (uniforme inteira) — ga_handmade.py
+Demo visual do operador de Mutação (uniforme inteira) — ga_rf_optimizer.py
 
 Execução:
     python src/test/demo_mutate.py
@@ -11,7 +11,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from engine.ga_handmade import Individual, MUT_INDPB, mutate
+from engine.ga_rf_optimizer import Individual, MUT_INDPB, mutate
 
 GENE_LABELS = ["n_estimators", "max_depth", "min_samples_leaf", "min_samples_split", "max_features"]
 
@@ -65,7 +65,7 @@ EXAMPLES = [
 ]
 
 print("=" * 72)
-print("  Demo: Operador de Mutação (uniforme inteira) — ga_handmade.py")
+print("  Demo: Operador de Mutação (uniforme inteira) — ga_rf_optimizer.py")
 print(f"  Probabilidade de mutação por gene (MUT_INDPB): {MUT_INDPB}")
 print("=" * 72)
 print("  Genes marcados com (*) foram mutados.")

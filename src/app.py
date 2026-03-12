@@ -1,4 +1,4 @@
-"""Interface Streamlit para visualização em tempo real do Algoritmo Genético (ga_handmade).
+"""Interface Streamlit para visualização em tempo real do Algoritmo Genético (ga_rf_optimizer).
 
 Este módulo implementa o dashboard interativo que permite:
 - Configurar os parâmetros do AG (tamanho da população, gerações, probabilidades
@@ -10,7 +10,7 @@ Este módulo implementa o dashboard interativo que permite:
 
 O AG otimiza os hiperparâmetros de um RandomForestClassifier para o dataset de
 diabetes Pima Indians, usando como referência o CV accuracy obtido por GridSearch
-na Fase 1 do projeto (constante PHASE1_CV_ACCURACY importada de ga_handmade).
+na Fase 1 do projeto (constante PHASE1_CV_ACCURACY importada de ga_rf_optimizer).
 
 Execute com:
     streamlit run src/app.py
@@ -36,7 +36,7 @@ from sklearn.model_selection import train_test_split
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from engine.ga_handmade import (
+from engine.ga_rf_optimizer import (
     CX_PB,
     MUT_INDPB,
     MUT_PB,
@@ -368,7 +368,7 @@ def run_ga_streaming(
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
-    _ga_logger = GALogger("ga_handmade")
+    _ga_logger = GALogger("ga_rf_optimizer")
     _ga_logger.log_run_start(
         n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
         target_improvement=target_improvement, target_cv=target_cv, max_gen=max_gen,
@@ -832,7 +832,7 @@ if start:
                 cv_fitness=best_fit,
                 test_acc=float(acc_opt),
                 acc_orig=float(acc_orig) if acc_orig is not None else None,
-                algorithm="ga_handmade",
+                algorithm="ga_rf_optimizer",
                 run_id=_run_id,
                 n_pop=n_pop,
                 max_gen=max_gen,

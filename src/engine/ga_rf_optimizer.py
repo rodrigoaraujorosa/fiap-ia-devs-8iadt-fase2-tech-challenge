@@ -392,7 +392,7 @@ def run_ga(
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
-    _ga_logger = GALogger("ga_handmade")
+    _ga_logger = GALogger("ga_rf_optimizer")
     _ga_logger.log_run_start(
         n_pop=n_pop, cx_pb=cx_pb, mut_pb=mut_pb, mut_indpb=mut_indpb,
         target_improvement=target_improvement, target_cv=target_cv,
