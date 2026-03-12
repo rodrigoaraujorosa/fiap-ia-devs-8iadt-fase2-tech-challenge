@@ -232,6 +232,11 @@ def save_result_image(
     acc_orig: float | None,
     algorithm: str,
     run_id: str,
+    n_pop: int = 0,
+    max_gen: int = 0,
+    cx_pb: float = 0.0,
+    mut_pb: float = 0.0,
+    mut_indpb: float = 0.0,
 ) -> str:
     """Gera e salva uma figura resumo em images/ quando a meta do AG é atingida.
 
@@ -265,23 +270,37 @@ def save_result_image(
     ax1.set_title("Evolução do Fitness")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
+    ax1.xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
     ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.4f}"))
 
     # Painel 2 — hiperparâmetros
     ax2 = fig.add_subplot(gs[1, 0])
     ax2.axis("off")
-    rows = [[k, str(v)] for k, v in params.items()]
+    rows = [["── Parâmetros do AG ──", ""]]
+    rows += [
+        ["Tamanho da população", str(n_pop)],
+        ["Máx. gerações", str(max_gen)],
+        ["Prob. cruzamento (CX_PB)", f"{cx_pb:.2f}"],
+        ["Prob. mutação (MUT_PB)", f"{mut_pb:.2f}"],
+        ["Prob. por gene (MUT_INDPB)", f"{mut_indpb:.2f}"],
+        ["── Melhor indivíduo ──", ""],
+    ]
+    rows += [[k, str(v)] for k, v in params.items()]
     rows.append(["CV accuracy (treino)", f"{cv_fitness:.4f}"])
     tbl = ax2.table(
         cellText=rows,
-        colLabels=["Hiperparâmetro", "Valor"],
+        colLabels=["Parâmetro", "Valor"],
         cellLoc="center",
-        loc="center",
+        bbox=[0, 0, 1, 1],  # preenche toda a área dos eixos; título fica fora
     )
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(9)
-    tbl.scale(1, 1.35)
-    ax2.set_title("Melhor indivíduo", pad=8)
+    # Destaca as linhas de cabeçalho de seção
+    for row_idx in [1, 7]:  # linhas dos separadores (1-based, após header)
+        for col in range(2):
+            tbl[row_idx, col].set_facecolor("#E3F2FD")
+            tbl[row_idx, col].set_text_props(fontweight="bold")
+    ax2.set_title("Configuração da execução", pad=6)
 
     # Painel 3 — comparação de acurácia
     ax3 = fig.add_subplot(gs[1, 1])
@@ -815,6 +834,11 @@ if start:
                 acc_orig=float(acc_orig) if acc_orig is not None else None,
                 algorithm="ga_handmade",
                 run_id=_run_id,
+                n_pop=n_pop,
+                max_gen=max_gen,
+                cx_pb=cx_pb,
+                mut_pb=mut_pb,
+                mut_indpb=mut_indpb,
             )
             st.caption(f"🖼️ Figura salva em: `{os.path.normpath(img_path)}`")
         else:

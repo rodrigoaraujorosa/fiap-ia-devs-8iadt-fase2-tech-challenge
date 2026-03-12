@@ -173,7 +173,7 @@ def evaluate(individual: Individual, X, y) -> float:
         random_state=42,
         n_jobs=-1,           # usa todos os núcleos disponíveis
     )
-    scores = cross_val_score(clf, X, y, cv=5, scoring="accuracy")
+    scores = cross_val_score(clf, X, y, cv=5, scoring="accuracy", n_jobs=-1)
     # Penaliza a variância: premia acurácia alta E consistente entre folds
     return scores.mean() - CV_STD_PENALTY * scores.std()
 
