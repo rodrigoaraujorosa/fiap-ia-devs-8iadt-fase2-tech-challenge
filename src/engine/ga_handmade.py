@@ -350,6 +350,8 @@ def run_ga(
     -------
     Individual — indivíduo com o maior fitness observado em toda a execução
     """
+    print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.2f}, "
+          f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica: PHASE1_CV_ACCURACY elevada pelo percentual solicitado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 

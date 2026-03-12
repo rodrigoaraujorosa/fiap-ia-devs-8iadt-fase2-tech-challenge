@@ -250,6 +250,8 @@ def run_ga_streaming(
             - ``target_cv``   (float) — meta de CV accuracy a ser superada;
             - ``done``        (bool)  — True se a meta já foi atingida.
     """
+    print(f"      Iniciando AG com população={n_pop}, target_improvement={target_improvement:.2f}, "
+          f"cx_pb={cx_pb:.2f}, mut_pb={mut_pb:.2f}, mut_indpb={mut_indpb:.2f}")
     # Meta dinâmica calculada a partir do percentual de melhoria desejado
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
 
