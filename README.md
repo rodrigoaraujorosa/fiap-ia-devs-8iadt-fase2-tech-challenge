@@ -57,7 +57,9 @@ Combinar média e desvio padrão penaliza soluções instáveis — aquelas que 
 
 A execução encerra quando o melhor indivíduo supera a meta de acurácia:
 
-$$\text{target\_cv} = 0{,}7867 \times (1 + \text{target\_improvement})$$
+```
+target_cv = 0.7867 × (1 + target_improvement)
+```
 
 O parâmetro `target_improvement` (padrão `0.0`) permite exigir uma melhoria percentual adicional sobre a referência da Fase 1. O usuário também pode interromper manualmente a qualquer momento com `Ctrl+C`.
 
