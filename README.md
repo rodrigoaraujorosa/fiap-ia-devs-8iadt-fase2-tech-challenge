@@ -154,26 +154,26 @@ Se a meta de CV for atingida, o modelo otimizado é serializado em `models/model
 
 ## 🏆 Resultados Obtidos
 
-O AG encontrou um conjunto de hiperparâmetros superior ao GridSearch da Fase 1 após **35 gerações**:
+O AG encontrou um conjunto de hiperparâmetros superior ao GridSearch da Fase 1 após **11 gerações**:
 
 ### Melhor Indivíduo Encontrado
 
 | Hiperparâmetro       | Valor      |
 |:---------------------|:----------:|
 | `n_estimators`       | 43         |
-| `max_depth`          | 24         |
-| `min_samples_leaf`   | 1          |
-| `min_samples_split`  | 5          |
+| `max_depth`          | 11         |
+| `min_samples_leaf`   | 2          |
+| `min_samples_split`  | 8          |
 | `max_features`       | `log2`     |
-| **CV accuracy**      | **0,7881** |
+| **CV accuracy**      | **0,7894** |
 
 ### Comparação com o Modelo Original (Fase 1)
 
 | Modelo                          | Acurácia no Teste | CV Accuracy | F1 (Diabético) |
 |:--------------------------------|:-----------------:|:-----------:|:--------------:|
 | **Original (GridSearch Fase 1)**| 75,32%            | 78,67%      | 0,62           |
-| **Otimizado (AG Fase 2)**       | **75,97%**        | **78,81%** | **0,63**       |
-| **Δ (melhoria)**                | **+0,65 p.p.**   | **+0,14 p.p.** | **+0,01** |
+| **Otimizado (AG Fase 2)**       | **75,97%**        | **78,94%** | **0,63**       |
+| **Δ (melhoria)**                | **+0,65 p.p.**   | **+0,27 p.p.** | **+0,01** |
 
 > O AG superou a meta de CV accuracy (0,7867) e melhorou tanto a acurácia no teste quanto o F1-Score para a classe diabético, confirmando a eficácia da otimização evolutiva.
 
@@ -182,22 +182,22 @@ O AG encontrou um conjunto de hiperparâmetros superior ao GridSearch da Fase 1 
 ```
                precision    recall  f1-score   support
 
-Não diabético       0.79      0.85      0.82       100
-    Diabético       0.68      0.59      0.63        54
+Não diabético       0.78      0.87      0.82       100
+    Diabético       0.70      0.56      0.63        54
 
      accuracy                           0.76       154
-    macro avg       0.74      0.72      0.73       154
- weighted avg       0.75      0.76      0.76       154
+    macro avg       0.74      0.71      0.72       154
+ weighted avg       0.75      0.76      0.75       154
 ```
 
-### Profiling — Tempo por Fase (35 gerações)
+### Profiling — Tempo por Fase (11 gerações)
 
 | Fase        | Total (s) | Chamadas | Média (ms) | % do tempo |
 |:------------|:---------:|:--------:|:----------:|:----------:|
-| Avaliação   | 196,37    | 35       | 5610,50    | 99,9%      |
-| Mutação     | 0,093     | 35       | 2,66       | 0,0%       |
-| Crossover   | 0,058     | 35       | 1,66       | 0,0%       |
-| Seleção     | 0,009     | 35       | 0,25       | 0,0%       |
+| Avaliação   | 63,592    | 11       | 5781,10    | 99,9%      |
+| Crossover   | 0,031     | 11       | 2,83       | 0,0%       |
+| Mutação     | 0,028     | 11       | 2,55       | 0,0%       |
+| Seleção     | 0,003     | 11       | 0,29       | 0,0%       |
 
 > Praticamente todo o custo computacional está na avaliação (CV 5-fold). Os operadores genéticos são extremamente rápidos — a otimização lazy de reavaliação é essencial para a viabilidade do AG.
 
@@ -222,9 +222,17 @@ streamlit run src/app.py
 
 ### Preview
 
-| Painel de Evolução | Painel de Exploração |
-|:---:|:---:|
-| ![Resultado EXP1](images/resultado_ga_rf_optimizer_20260312_212549-EXP1.png) | ![Resultado EXP2](images/resultado_ga_rf_optimizer_20260312_213335-EXP2.png) |
+| Painel de Evolução |
+|:---:|
+| ![Painel de Evolução](images/streamlit_hiperparameters_evolution.png) |
+
+| Painel de Exploração |
+|:---:|
+![Painel de Exploração](images/streamlit_hiperparameters_exploration.png) |
+
+| Painel de Comparação |
+|:---:|
+![Painel de Comparação](images/streamlit_model_comparation.png) |
 
 ## 🔄 Módulo de Log (`ga_logger.py`)
 

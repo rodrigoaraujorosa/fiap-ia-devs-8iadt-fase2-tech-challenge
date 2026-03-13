@@ -458,10 +458,10 @@ with st.sidebar:
         "Tamanho da população", min_value=10, max_value=50, value=10, step=5
     )
     max_gen = st.slider(
-        "Máx. gerações", min_value=20, max_value=300, value=100, step=20
+        "Máx. gerações", min_value=20, max_value=1000, value=100, step=20
     )
     target_improvement = round(st.slider(
-        "Melhoria alvo (%)", min_value=0.0, max_value=27.0, value=0.0, step=0.5,
+        "Melhoria alvo (%)", min_value=0.0, max_value=27.0, value=0.0, step=0.1,
         help=f"Percentual acima de {PHASE1_CV_ACCURACY:.4f} (GridSearch Fase 1) que o AG deve atingir.",
     ) / 100.0, 3)
     target_cv = round(PHASE1_CV_ACCURACY * (1 + target_improvement), 4)
