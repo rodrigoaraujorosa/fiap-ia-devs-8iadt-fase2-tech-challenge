@@ -809,6 +809,12 @@ if start:
                     gen=getattr(_logger, 'last_gen', gen),
                     elapsed=0.0,
                     meta_atingida=last_stats["done"],
+                    n_pop=n_pop,
+                    max_gen=max_gen,
+                    mut_pb=mut_pb,
+                    mut_indpb=mut_indpb,
+                    target_improvement=target_improvement,
+                    target_cv=last_stats["target_cv"],
                 )
                 st.caption(f"📄 Resumo salvo em: `{os.path.normpath(summary_path)}`")
 

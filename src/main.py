@@ -195,6 +195,12 @@ def main():
                 gen=getattr(_ga_logger, 'last_gen', 0),
                 elapsed=elapsed,
                 meta_atingida=goal_reached,
+                n_pop=args.n_pop,
+                max_gen=None,
+                mut_pb=args.mut_pb,
+                mut_indpb=args.mut_indpb,
+                target_improvement=args.target_improvement,
+                target_cv=target_cv,
             )
             print(f"      Resumo salvo em: {os.path.normpath(summary_path)}")
         else:

@@ -292,6 +292,12 @@ class GALogger:
         gen: int,
         elapsed: float,
         meta_atingida: bool,
+        n_pop: int | None = None,
+        max_gen: int | None = None,
+        mut_pb: float | None = None,
+        mut_indpb: float | None = None,
+        target_improvement: float | None = None,
+        target_cv: float | None = None,
     ) -> str:
         """Grava um arquivo de resumo legível comparando o modelo original
         (Fase 1) com o modelo otimizado pelo AG.
@@ -307,6 +313,7 @@ class GALogger:
         )
         SEP  = "=" * 80
         SEP2 = "-" * 80
+        max_gen_str = str(max_gen) if max_gen is not None else "ilimitado"
         lines = [
             SEP,
             "  RELATÓRIO FINAL — Comparação entre modelo original (Fase 1) e modelo AG",
@@ -316,6 +323,16 @@ class GALogger:
             f"  Duração          : {elapsed:.1f}s",
             f"  Gerações         : {gen}",
             f"  Meta atingida    : {'SIM' if meta_atingida else 'NAO'}",
+            "",
+            SEP2,
+            "  Parâmetros da evolução genética",
+            SEP2,
+            f"  {'n_pop':<24}: {n_pop if n_pop is not None else 'N/D'}",
+            f"  {'max_gen':<24}: {max_gen_str}",
+            f"  {'mut_pb':<24}: {mut_pb:.2f}" if mut_pb is not None else f"  {'mut_pb':<24}: N/D",
+            f"  {'mut_indpb':<24}: {mut_indpb:.2f}" if mut_indpb is not None else f"  {'mut_indpb':<24}: N/D",
+            f"  {'target_improvement':<24}: {target_improvement * 100:.2f}%" if target_improvement is not None else f"  {'target_improvement':<24}: N/D",
+            f"  {'target_cv':<24}: {target_cv:.4f}" if target_cv is not None else f"  {'target_cv':<24}: N/D",
             "",
             SEP2,
             "  Melhor indivíduo — hiperparâmetros otimizados",
