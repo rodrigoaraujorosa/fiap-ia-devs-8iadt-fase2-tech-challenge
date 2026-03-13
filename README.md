@@ -143,6 +143,105 @@ flowchart TD
     J --> E
 ```
 
+## 🏗️ Arquitetura e Decisões de Implementação
+
+### Visão Geral dos Módulos
+
+```
+src/
+├── main.py                  ← CLI: ponto de entrada via linha de comando
+├── app.py                   ← Dashboard Streamlit (interface visual)
+└── engine/
+    ├── ga_rf_optimizer.py   ← AG implementado do zero (implementação principal)
+    ├── ga_deap.py           ← AG alternativo usando o framework DEAP
+    └── ga_logger.py         ← Logging, profiling e geração de relatórios
+```
+
+```mermaid
+graph LR
+    main.py --> ga_rf_optimizer.py
+    main.py --> ga_deap.py
+    app.py  --> ga_rf_optimizer.py
+    ga_rf_optimizer.py --> ga_logger.py
+    ga_rf_optimizer.py --> sklearn["scikit-learn<br/>(RandomForest + CV)"]
+```
+
+---
+
+### Decisão 1 — `Individual` herda de `list`
+
+**O quê:** A classe `Individual` estende a lista nativa do Python em vez de encapsular os genes como atributo.
+
+**Por quê:** Os operadores genéticos (crossover, mutação) precisam indexar e fatiar os genes diretamente com `ind[i]` e `ind[cx1:cx2]`. Herdar de `list` evita camadas de indireção (`ind.genes[i]`) sem perda semântica — o indivíduo **é** o seu cromossomo.
+
+---
+
+### Decisão 2 — Elitismo de Semente na Inicialização
+
+**O quê:** O primeiro indivíduo da população inicial é substituído pelo melhor resultado do GridSearch da Fase 1: `[30, 15, 1, 5, 1]` (CV acc = 78,67%).
+
+**Por quê:** Reduz o tempo de convergência garantindo que o AG parta de um ponto já sabidamente competitivo. Os demais indivíduos continuam aleatórios para preservar diversidade genética e não viesar a busca.
+
+---
+
+### Decisão 3 — Seleção por Torneio em vez de Roleta
+
+**O quê:** A cada vaga do offspring, sorteia-se `tournsize=3` candidatos da população e escolhe-se o de maior fitness.
+
+**Por quê:** A seleção por roleta exige fitness positivo e normalizado (proporção de área). A seleção por torneio não impõe nenhuma dessas restrições e o parâmetro `tournsize` controla diretamente a pressão seletiva — valores maiores aumentam a pressão, valores menores preservam mais diversidade.
+
+---
+
+### Decisão 4 — Crossover com Garantia de Divergência
+
+**O quê:** Antes de sortear os pontos de corte, o algoritmo identifica os índices onde os dois pais diferem e ancora um dos pontos de corte nessa região (`pivot = random.choice(diff)`).
+
+**Por quê:** O crossover de dois pontos clássico pode gerar filhos idênticos aos pais se os pontos de corte caírem em regiões onde os genes já são iguais. Ancorar o corte em um gene divergente elimina esses **crossovers nulos**, aumentando a eficiência evolutiva.
+
+---
+
+### Decisão 5 — Penalidade de Instabilidade no Fitness
+
+**O quê:** O fitness combina média e desvio padrão do CV 5-fold:
+
+$$\text{fitness} = \overline{\text{CV}} - 0{,}1 \times \sigma_{\text{CV}}$$
+
+**Por quê:** Um modelo que acerta 85% em dois folds e 70% nos outros três tem média similar a um modelo consistente de ~78% — mas é muito menos confiável em produção. O coeficiente `0,1` foi calibrado como penalidade leve: desfavorece instabilidade sem descartar indivíduos com boa acurácia média.
+
+---
+
+### Decisão 6 — Avaliação Lazy (Reavaliação Seletiva)
+
+**O quê:** Todo indivíduo carrega um atributo `fitness`. Após crossover ou mutação, o fitness do indivíduo modificado é invalidado (`fitness = None`). No passo de avaliação, apenas os indivíduos com `fitness is None` são reavaliados.
+
+**Por quê:** O CV 5-fold representa ~99,9% do custo computacional total de uma execução. Revaliar indivíduos que não foram modificados seria desperdício puro. A avaliação lazy elimina esse custo mantendo a correção do algoritmo.
+
+---
+
+### Decisão 7 — Elitismo Implícito via `best_ind` Global
+
+**O quê:** O melhor indivíduo já visto é mantido em uma variável `best_ind` externa à população corrente, atualizada a cada geração via cópia profunda.
+
+**Por quê:** Garante que o resultado da execução nunca regride — mesmo que uma geração ruim de mutações degrade a população inteira, o melhor histórico é preservado. Isso torna o elitismo independente do tamanho da população (sem precisar de um "slot reservado" no offspring).
+
+---
+
+### Decisão 8 — `random_state=42` no `RandomForestClassifier`, não no AG
+
+**O quê:** O `RandomForestClassifier` usa `random_state=42` para avaliação de CV. O módulo `random` do AG não tem seed global fixada.
+
+**Por quê:** A reprodutibilidade da *avaliação* é importante — dois indivíduos com os mesmos genes sempre terão o mesmo fitness. Já o AG em si é estocástico por natureza: fixar a seed do AG tornaria todas as execuções idênticas, eliminando o benefício de rodar o algoritmo múltiplas vezes para explorar o espaço de busca.
+
+---
+
+### Decisão 9 — Implementação Manual vs. DEAP
+
+**O quê:** A implementação principal (`ga_rf_optimizer.py`) foi escrita do zero. O DEAP (`ga_deap.py`) existe como alternativa.
+
+**Por quê:** O enunciado do Tech Challenge exige implementação do zero, demonstrando compreensão dos operadores genéticos. O DEAP é mantido como referência comparativa e alternativa de uso — ele reduz significativamente o boilerplate mas abstrai os mecanismos internos que o projeto precisa evidenciar.
+
+---
+
 ## 📈 Pipeline da Fase 2
 
 ### 1. Carregamento dos Dados
