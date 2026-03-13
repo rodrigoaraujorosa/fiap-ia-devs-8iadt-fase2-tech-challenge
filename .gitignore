@@ -164,3 +164,10 @@ setup.*
 
 # Ignore imagens
 resultado_ga_rf_optimizer_*.png
+
+# Ignore arquivos word
+*.doc
+*.docx
+
+# Ignore arquivos específicos do projeto
+relatorio_tecnico.md

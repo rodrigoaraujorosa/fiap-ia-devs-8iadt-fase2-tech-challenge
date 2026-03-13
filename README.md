@@ -1,4 +1,4 @@
-# Tech Challenge Fase 2 — Otimização com Algoritmo Genético 🧬
+# Tech Challenge Fase 2 — Otimização de Hiperparametros com Algoritmo Genético 🧬
 
 Projeto de Machine Learning desenvolvido como parte do **Tech Challenge - Fase 2** do curso **FIAP AI para DEVs (8IADT)**. O objetivo é aprimorar o modelo Random Forest construído na Fase 1 por meio de um **Algoritmo Genético (AG) implementado do zero**, que automatiza a busca pela combinação ideal de hiperparâmetros.
 
@@ -144,6 +144,8 @@ flowchart TD
 ```
 
 ## 🏗️ Arquitetura e Decisões de Implementação
+
+Esta seção documenta os principais **desafios enfrentados** durante o desenvolvimento e as **soluções implementadas** para resolvê-los. Cada decisão de projeto descreve o problema que a motivou e a abordagem adotada, cobrindo desde a estrutura interna dos indivíduos até as estratégias evolutivas escolhidas.
 
 ### Visão Geral dos Módulos
 
