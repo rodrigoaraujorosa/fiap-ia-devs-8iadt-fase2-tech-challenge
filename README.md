@@ -33,7 +33,7 @@ Um Algoritmo Genético é uma metaheurística inspirada na teoria evolutiva de D
 
 Ao longo das gerações, a população tende a convergir para regiões de alta aptidão no espaço de busca — neste projeto, regiões com boa acurácia de validação cruzada.
 
-### Representação do Indivíduo (Cromossomo)
+### Representação de Genes do Indivíduo (Cromossomo)
 
 Cada indivíduo é uma lista de **5 genes inteiros**, onde cada posição representa um hiperparâmetro do `RandomForestClassifier`:
 
@@ -45,13 +45,19 @@ Cada indivíduo é uma lista de **5 genes inteiros**, onde cada posição repres
 | [3]  | `min_samples_split`  | inteiro    | 2 – 20                    | Mínimo de amostras para dividir um nó interno                     |
 | [4]  | `max_features`       | binário    | 0 = `sqrt`, 1 = `log2`    | Critério de seleção de variáveis por divisão                      |
 
+#### Codificação
+$$[HP_0, HP_1, HP_2, HP_3, HP_4]$$
+Onde HP = Hiperparametro
+
+[n_estimators, max_depth, min_samples_leaf, min_samples_split, max_features]
+
 ### Função de Aptidão (Fitness)
 
 A aptidão de cada indivíduo é calculada treinando um `RandomForestClassifier` com seus genes e aplicando **validação cruzada estratificada de 5 folds**:
 
 $$\text{fitness} = \overline{\text{CV}} - 0{,}1 \times \sigma_{\text{CV}}$$
 
-Combinar média e desvio padrão penaliza soluções instáveis — aquelas que acertam muito em alguns folds mas erram em outros. O objetivo é encontrar modelos acurados **e** consistentes.
+Combinar média e desvio padrão penaliza soluções instáveis — aquelas que acertam muito em alguns folds mas erram em outros. O objetivo é encontrar modelos acurados e consistentes.
 
 ### Critério de Parada
 
@@ -137,7 +143,7 @@ flowchart TD
     J --> E
 ```
 
-## 📈 Pipeline da Fase 2 (EXEMPLO)
+## 📈 Pipeline da Fase 2
 
 ### 1. Carregamento dos Dados
 O dataset pré-processado da Fase 1 (`diabetes_treated.csv`) é carregado e dividido em treino (80%) e teste (20%) com estratificação.
@@ -154,7 +160,7 @@ O modelo otimizado pelo AG é comparado diretamente com o modelo da Fase 1 (salv
 ### 5. Exportação do Modelo
 Se a meta de CV for atingida, o modelo otimizado é serializado em `models/model_diabetes_rf_optimized_{timestamp}.pkl` e o relatório comparativo é salvo em `logs/summary_ga_rf_optimizer_{timestamp}.txt`.
 
-## 🏆 Resultados Obtidos
+## 🏆 Resultados Obtidos (EXEMPLO)
 
 O AG encontrou um conjunto de hiperparâmetros superior ao GridSearch da Fase 1 após **11 gerações**:
 
