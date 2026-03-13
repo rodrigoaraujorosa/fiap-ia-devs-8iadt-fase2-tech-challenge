@@ -28,7 +28,7 @@ Implementar do zero um Algoritmo Genético capaz de otimizar os hiperparâmetros
 Um Algoritmo Genético é uma metaheurística inspirada na teoria evolutiva de Darwin. A ideia central é manter uma **população** de soluções candidatas (indivíduos), que evoluem geração a geração por meio de três operadores:
 
 1. **Seleção** — os indivíduos mais aptos têm maior chance de se reproduzir.
-2. **Crossover (Recombinação)** — combina material genético de dois pais para gerar filhos.
+2. **Crossover (Cruzamento)** — combina material genético de dois pais para gerar filhos.
 3. **Mutação** — introduz variações aleatórias para manter diversidade genética.
 
 Ao longo das gerações, a população tende a convergir para regiões de alta aptidão no espaço de busca — neste projeto, regiões com boa acurácia de validação cruzada.
@@ -231,11 +231,11 @@ streamlit run src/app.py
 Cada execução do AG gera automaticamente um arquivo de log detalhado em `logs/{algoritmo}_{timestamp}.log`, registrando:
 
 - Parâmetros de configuração da execução.
-- Evento de seleção: indivíduos escolhidos por torneio a cada geração.
-- Crossovers: pares originais, filhos gerados e se houve troca efetiva.
-- Mutações: gene(s) alterados por indivíduo.
-- Estatísticas por geração: melhor fitness, fitness médio, situação da meta.
-- Profiling: tempo acumulado por fase (seleção, crossover, mutação, avaliação).
+- **Evento de seleção**: indivíduos escolhidos por torneio a cada geração.
+- **Crossovers**: pares originais, filhos gerados e se houve troca efetiva.
+- **Mutações**: gene(s) alterados por indivíduo.
+- **Estatísticas por geração**: melhor fitness, fitness médio, situação da meta.
+- **Profiling**: tempo acumulado por fase (seleção, crossover, mutação, avaliação).
 - Resumo final comparativo salvo em `logs/summary_ga_rf_optimizer_{timestamp}.txt`.
 
 O nível de detalhe é controlável via variável de ambiente `GA_LOG_LEVEL` (valores: `INFO` ou `DEBUG`).
@@ -413,7 +413,37 @@ O nível de detalhamento do log pode ser controlado criando um arquivo `.env` na
 GA_LOG_LEVEL=DEBUG   # INFO (padrão) ou DEBUG (logs mais detalhados)
 ```
 
-Com `DEBUG`, os logs incluem todos os indivíduos da população e os pares que não realizaram crossover/mutação.
+### Seções do Log
+
+Cada linha do log é prefixada com uma tag de seção entre colchetes. A tabela abaixo descreve o conteúdo de cada uma:
+
+| Seção          | Nível   | Descrição                                                                                                          |
+|:---------------|:-------:|:-------------------------------------------------------------------------------------------------------------------|
+| `[RUN_START]`  | INFO    | Registra os parâmetros da execução: algoritmo, tamanho da população, `max_gen`, probabilidades de mutação e meta de CV. |
+| `[GEN_START]`  | INFO    | Marca o início de cada geração (ex.: `── geração=1 ──`). A geração 0 corresponde à população inicial.             |
+| `[GEN_STATS]`  | INFO    | Estatísticas ao fim de cada geração: melhor fitness, fitness médio, meta de CV e genes do melhor indivíduo.        |
+| `[SELECTION]`  | INFO    | Resume a seleção por torneio: método, `tournsize` e quantidade de indivíduos selecionados.                         |
+| `[CROSSOVER]`  | INFO    | Para pares que realizaram troca (`CX=SIM`): registra os índices do par, os genes trocados e os cromossomos antes/depois. Pares com pais idênticos (`CX=NAO`) são omitidos no nível INFO. |
+| `[MUTATION]`   | INFO    | Para indivíduos mutados (`MUT=SIM`): registra o índice do indivíduo, os genes alterados e o cromossomo antes/depois. Indivíduos não mutados (`MUT=NAO`) são omitidos no nível INFO. |
+| `[RUN_END]`    | INFO    | Registra o encerramento da execução: geração final, melhor fitness, tempo total, se a meta foi atingida e os genes do melhor indivíduo. |
+| `[PROFILING]`  | INFO    | Bloco emitido ao final com o tempo acumulado por fase (seleção, crossover, mutação, avaliação): total, chamadas, média e percentual. |
+
+| Log INFO - Estrutura |
+|:---:|
+| ![Log INFO](images/log_level_info.png) |
+
+Com `GA_LOG_LEVEL=DEBUG`, duas seções adicionais são emitidas:
+
+| Seção          | Nível   | Descrição                                                                                                          |
+|:---------------|:-------:|:-------------------------------------------------------------------------------------------------------------------|
+| `[INDIVIDUAL]` | DEBUG   | Lista todos os indivíduos da população ao fim de cada geração, ordenados por fitness (rank), com seus genes decodificados. |
+| `[SELECTED]`   | DEBUG   | Lista cada indivíduo escolhido pela seleção por torneio, com seu slot na nova geração, fitness e genes.            |
+
+> Com `DEBUG` também passam a aparecer as entradas `[CROSSOVER] CX=NAO` e `[MUTATION] MUT=NAO`, registrando os pares e indivíduos que **não** foram modificados em cada geração.
+
+| Log DEBUG - Estrutura |
+|:---:|
+| ![Log DEBUG](images/log_level_debug.png) |
 
 ## ⚠️ Dicas e Solução de Problemas
 

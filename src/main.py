@@ -101,17 +101,17 @@ def main():
     ga_module = importlib.import_module(module_path)
     run_ga = ga_module.run_ga
 
-    print("=" * 60)
+    print("=" * 100)
     print(f"  Algoritmo Genético — Otimização de RandomForest ({label})")
-    print("=" * 60)
+    print("=" * 100)
 
-    print("\n[1/4] Carregando dados...")
+    print("\n[1/5] Carregando dados...")
     X_train, X_test, y_train, y_test = load_data(DATA_PATH)
     print(f"      Treino: {X_train.shape[0]} amostras | Teste: {X_test.shape[0]} amostras")
 
     target_cv = round(PHASE1_CV_ACCURACY * (1 + args.target_improvement), 4)
 
-    print(f"\n[2/4] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta:>{target_cv:.4f})...")
+    print(f"\n[2/5] Executando AG (população={args.n_pop}, melhoria alvo={args.target_improvement*100:.0f}% sobre {PHASE1_CV_ACCURACY:.4f} → meta:>{target_cv:.4f})...")
     t0 = time.time()
     try:
         best, _ga_logger = run_ga(
@@ -127,13 +127,13 @@ def main():
     elapsed = time.time() - t0
     print(f"      Concluído em {elapsed:.1f}s")
 
-    print("\n[3/4] Melhor indivíduo encontrado:")
+    print("\n[3/5] Melhor indivíduo encontrado:")
     params = decode_individual(best)
     for k, v in params.items():
         print(f"      {k}: {v}")
     print(f"      Fitness (CV acc): {get_fitness(best, args.algorithm):.4f}")
 
-    print("\n[4/4] Avaliando no conjunto de teste...")
+    print("\n[4/5] Avaliando no conjunto de teste...")
     clf = RandomForestClassifier(**params, random_state=42, n_jobs=-1)
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
@@ -203,7 +203,7 @@ def main():
         print(f"[5/5] Modelo não exportado: meta de CV accuracy não atingida "
               f"(melhor: {get_fitness(best, args.algorithm):.4f}, meta: {target_cv:.4f}).")
 
-    print("=" * 60)
+    print("=" * 100)
 
 
 if __name__ == "__main__":

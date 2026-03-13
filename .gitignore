@@ -163,4 +163,4 @@ Makefile
 setup.*
 
 # Ignore imagens
-images/
+resultado_ga_rf_optimizer_*.png
