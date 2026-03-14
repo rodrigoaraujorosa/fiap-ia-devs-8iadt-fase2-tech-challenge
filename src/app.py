@@ -307,7 +307,7 @@ def save_result_image(
     bars = ax3.bar(labels, values, color=colors, width=0.45)
     ax3.set_ylim(max(0, min(values) - 0.05), min(1.0, max(values) + 0.05))
     ax3.set_ylabel("Acurácia no teste")
-    ax3.set_title("Comparação de acurácia")
+    ax3.set_title("Comparação de acurácia (teste)")
     ax3.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.4f}"))
     ax3.grid(True, axis="y", alpha=0.3)
     for bar, val in zip(bars, values):

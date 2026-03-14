@@ -67,7 +67,7 @@ A execução encerra quando o melhor indivíduo supera a meta de acurácia:
 target_cv = 0.7867 × (1 + target_improvement)
 ```
 
-O parâmetro `target_improvement` (padrão `0.0`) permite exigir uma melhoria percentual adicional sobre a referência da Fase 1. O usuário também pode interromper manualmente a qualquer momento com `Ctrl+C`.
+O parâmetro `target_improvement` (padrão `0.0`) permite exigir uma melhoria percentual adicional sobre a referência da Fase 1. Se o dashboard do Streamlit estiver sendo utilizado, o usuário também pode definir o número máximo de gerações, se a evolução chegar até a geração máxima definada, sem que a meta tenha sido batida, a execução se encerra. No caso da execução estar sendo realizada via linha de comando (CLI), o usuário também pode interromper manualmente a qualquer momento com `Ctrl+C` quando executado por linha de comando.
 
 ## ⚙️ Implementação
 
@@ -260,55 +260,6 @@ O modelo otimizado pelo AG é comparado diretamente com o modelo da Fase 1 (salv
 
 ### 5. Exportação do Modelo
 Se a meta de CV for atingida, o modelo otimizado é serializado em `models/model_diabetes_rf_optimized_{timestamp}.pkl` e o relatório comparativo é salvo em `logs/summary_ga_rf_optimizer_{timestamp}.txt`.
-
-## 🏆 Resultados Obtidos (EXEMPLO)
-
-O AG encontrou um conjunto de hiperparâmetros superior ao GridSearch da Fase 1 após **11 gerações**:
-
-### Melhor Indivíduo Encontrado
-
-| Hiperparâmetro       | Valor      |
-|:---------------------|:----------:|
-| `n_estimators`       | 43         |
-| `max_depth`          | 11         |
-| `min_samples_leaf`   | 2          |
-| `min_samples_split`  | 8          |
-| `max_features`       | `log2`     |
-| **CV accuracy**      | **0,7894** |
-
-### Comparação com o Modelo Original (Fase 1)
-
-| Modelo                          | Acurácia no Teste | CV Accuracy | F1 (Diabético) |
-|:--------------------------------|:-----------------:|:-----------:|:--------------:|
-| **Original (GridSearch Fase 1)**| 75,32%            | 78,67%      | 0,62           |
-| **Otimizado (AG Fase 2)**       | **75,97%**        | **78,94%** | **0,63**       |
-| **Δ (melhoria)**                | **+0,65 p.p.**   | **+0,27 p.p.** | **+0,01** |
-
-> O AG superou a meta de CV accuracy (0,7867) e melhorou tanto a acurácia no teste quanto o F1-Score para a classe diabético, confirmando a eficácia da otimização evolutiva.
-
-### Relatório de Classificação — Modelo Otimizado (AG)
-
-```
-               precision    recall  f1-score   support
-
-Não diabético       0.78      0.87      0.82       100
-    Diabético       0.70      0.56      0.63        54
-
-     accuracy                           0.76       154
-    macro avg       0.74      0.71      0.72       154
- weighted avg       0.75      0.76      0.75       154
-```
-
-### Profiling — Tempo por Fase (11 gerações)
-
-| Fase        | Total (s) | Chamadas | Média (ms) | % do tempo |
-|:------------|:---------:|:--------:|:----------:|:----------:|
-| Avaliação   | 63,592    | 11       | 5781,10    | 99,9%      |
-| Crossover   | 0,031     | 11       | 2,83       | 0,0%       |
-| Mutação     | 0,028     | 11       | 2,55       | 0,0%       |
-| Seleção     | 0,003     | 11       | 0,29       | 0,0%       |
-
-> Praticamente todo o custo computacional está na avaliação (CV 5-fold). Os operadores genéticos são extremamente rápidos — a otimização lazy de reavaliação é essencial para a viabilidade do AG.
 
 ## 🖥️ Dashboard Interativo (Streamlit)
 
