@@ -170,4 +170,4 @@ resultado_ga_rf_optimizer_*.png
 *.docx
 
 # Ignore arquivos específicos do projeto
-relatorio_tecnico.md
+# TECHNICAL_REPORT.md
