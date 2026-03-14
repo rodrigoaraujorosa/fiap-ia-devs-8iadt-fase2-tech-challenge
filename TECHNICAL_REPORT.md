@@ -245,7 +245,22 @@ Geração N:
     7. Verifica critério     → se best_fitness > target_cv → encerra
 ```
 
-![Figura 2 - Fluxo do Algoritmo Genético](images/ag_flowchart.png)
+```mermaid
+flowchart TD
+    A([Início]) --> B[Gerar população inicial<br/>n_pop indivíduos aleatórios]
+    B --> C[Injetar semente GridSearch<br/>melhor resultado Fase 1]
+    C --> D[Avaliar fitness de todos<br/>CV 5-fold: mean − 0.1·std]
+
+    D --> E{fitness_melhor<br/>> target_cv?}
+    E -- Sim --> Z([Retornar melhor indivíduo])
+
+    E -- Não --> F[Seleção por Torneio<br/>tournsize=3, k=n_pop]
+    F --> G[Crossover de dois pontos<br/>pares não-idênticos]
+    G --> H[Mutação uniforme inteira<br/>mut_pb · mut_indpb por gene]
+    G --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
+    H --> J[Atualizar melhor indivíduo<br/>Hall of Fame]
+    J --> E
+```
 
 *Figura 2 - Fluxo do Algoritmo Genético*
 
@@ -267,7 +282,14 @@ src/
     └── ga_logger.py         ← Logging, profiling e geração de relatórios
 ```
 
-![Figura 3 - Arquitetura do Projeto](images/ag_architecture.png)
+```mermaid
+graph LR
+    main.py --> ga_rf_optimizer.py
+    main.py --> ga_deap.py
+    app.py  --> ga_rf_optimizer.py
+    ga_rf_optimizer.py --> ga_logger.py
+    ga_rf_optimizer.py --> sklearn["scikit-learn<br/>(RandomForest + CV)"]
+```
 
 *Figura 3 - Arquitetura do Projeto*
 

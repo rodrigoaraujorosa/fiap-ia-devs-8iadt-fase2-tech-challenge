@@ -487,14 +487,14 @@ Cada linha do log é prefixada com uma tag de seção entre colchetes. A tabela 
 
 | Seção          | Nível   | Descrição                                                                                                          |
 |:---------------|:-------:|:-------------------------------------------------------------------------------------------------------------------|
-| `[RUN_START]`  | INFO    | Registra os parâmetros da execução: algoritmo, tamanho da população, `max_gen`, probabilidades de mutação e meta de CV. |
-| `[GEN_START]`  | INFO    | Marca o início de cada geração (ex.: `── geração=1 ──`). A geração 0 corresponde à população inicial.             |
-| `[GEN_STATS]`  | INFO    | Estatísticas ao fim de cada geração: melhor fitness, fitness médio, meta de CV e genes do melhor indivíduo.        |
-| `[SELECTION]`  | INFO    | Resume a seleção por torneio: método, `tournsize` e quantidade de indivíduos selecionados.                         |
-| `[CROSSOVER]`  | INFO    | Para pares que realizaram troca (`CX=SIM`): registra os índices do par, os genes trocados e os cromossomos antes/depois. Pares com pais idênticos (`CX=NAO`) são omitidos no nível INFO. |
-| `[MUTATION]`   | INFO    | Para indivíduos mutados (`MUT=SIM`): registra o índice do indivíduo, os genes alterados e o cromossomo antes/depois. Indivíduos não mutados (`MUT=NAO`) são omitidos no nível INFO. |
-| `[RUN_END]`    | INFO    | Registra o encerramento da execução: geração final, melhor fitness, tempo total, se a meta foi atingida e os genes do melhor indivíduo. |
-| `[PROFILING]`  | INFO    | Bloco emitido ao final com o tempo acumulado por fase (seleção, crossover, mutação, avaliação): total, chamadas, média e percentual. |
+| `[RUN_START]`  | `INFO`    | Registra os parâmetros da execução: algoritmo, tamanho da população, `max_gen`, probabilidades de mutação e meta de CV. |
+| `[GEN_START]`  | `INFO`    | Marca o início de cada geração (ex.: `── geração=1 ──`). A geração 0 corresponde à população inicial.             |
+| `[GEN_STATS]`  | `INFO`    | Estatísticas ao fim de cada geração: melhor fitness, fitness médio, meta de CV e genes do melhor indivíduo.        |
+| `[SELECTION]`  | `INFO`    | Resume a seleção por torneio: método, `tournsize` e quantidade de indivíduos selecionados.                         |
+| `[CROSSOVER]`  | `INFO`    | Para pares que realizaram troca (`CX=SIM`): registra os índices do par, os genes trocados e os cromossomos antes/depois. Pares com pais idênticos (`CX=NAO`) são omitidos no nível INFO. |
+| `[MUTATION]`   | `INFO`    | Para indivíduos mutados (`MUT=SIM`): registra o índice do indivíduo, os genes alterados e o cromossomo antes/depois. Indivíduos não mutados (`MUT=NAO`) são omitidos no nível INFO. |
+| `[RUN_END]`    | `INFO`    | Registra o encerramento da execução: geração final, melhor fitness, tempo total, se a meta foi atingida e os genes do melhor indivíduo. |
+| `[PROFILING]`  | `INFO`    | Bloco emitido ao final com o tempo acumulado por fase (seleção, crossover, mutação, avaliação): total, chamadas, média e percentual. |
 
 | Log INFO - Estrutura |
 |:---:|
@@ -504,8 +504,8 @@ Com `GA_LOG_LEVEL=DEBUG`, duas seções adicionais são emitidas:
 
 | Seção          | Nível   | Descrição                                                                                                          |
 |:---------------|:-------:|:-------------------------------------------------------------------------------------------------------------------|
-| `[INDIVIDUAL]` | DEBUG   | Lista todos os indivíduos da população ao fim de cada geração, ordenados por fitness (rank), com seus genes decodificados. |
-| `[SELECTED]`   | DEBUG   | Lista cada indivíduo escolhido pela seleção por torneio, com seu slot na nova geração, fitness e genes.            |
+| `[INDIVIDUAL]` | `DEBUG`   | Lista todos os indivíduos da população ao fim de cada geração, ordenados por fitness (rank), com seus genes decodificados. |
+| `[SELECTED]`   | `DEBUG`   | Lista cada indivíduo escolhido pela seleção por torneio, com seu slot na nova geração, fitness e genes.            |
 
 > Com `DEBUG` também passam a aparecer as entradas `[CROSSOVER] CX=NAO` e `[MUTATION] MUT=NAO`, registrando os pares e indivíduos que **não** foram modificados em cada geração.
 
