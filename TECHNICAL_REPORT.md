@@ -226,7 +226,9 @@ Indivíduo mutado: [39, 19, 4, 5, 1]
 
 ### 2.5 Critério de Parada
 
-$$\text{target\_cv} = 0{,}7867 \times (1 + \text{target\_improvement})$$
+```
+target_cv = 0.7867 × (1 + target_improvement)
+```
 
 A execução encerra quando o melhor indivíduo supera `target_cv`. Com `target_improvement=0.0` (padrão), a meta é simplesmente superar 0,7867. 
 
