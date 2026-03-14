@@ -23,7 +23,7 @@ Na Fase 1, o melhor modelo obtido foi um Random Forest com **acurácia de 75,32%
 
 Implementar do zero um Algoritmo Genético capaz de otimizar os hiperparâmetros do `RandomForestClassifier`, superando a acurácia de validação cruzada (CV 5-fold = **0,7867**) obtida pelo GridSearch na Fase 1 (Figura 1).
 
-![Log INFO](images/configuracao_gridsearch_fase1.png)
+![Figura 1 - Configuração do GridSearch na Fase 1](images/configuracao_gridsearch_fase1.png)
 
 *Figura 1 - Configuração do GridSearch na Fase 1*
 
@@ -245,7 +245,7 @@ Geração N:
     7. Verifica critério     → se best_fitness > target_cv → encerra
 ```
 
-![Log INFO](images/ag_flowchart.png)
+![Figura 2 - Fluxo do Algoritmo Genético](images/ag_flowchart.png)
 
 *Figura 2 - Fluxo do Algoritmo Genético*
 
@@ -267,7 +267,7 @@ src/
     └── ga_logger.py         ← Logging, profiling e geração de relatórios
 ```
 
-![Log INFO](images/ag_architecture.png)
+![Figura 3 - Arquitetura do Projeto](images/ag_architecture.png)
 
 *Figura 3 - Arquitetura do Projeto*
 
@@ -368,15 +368,15 @@ streamlit run src/app.py
 
 **PREVIEWS**
 
-![Log INFO](images/streamlit_hiperparameters_evolution.png)
+![Figura 4 - Acompanhamento da evolução](images/streamlit_hiperparameters_evolution.png)
 
 *Figura 4 - Acompanhamento da evolução*
 
-![Log INFO](images/streamlit_hiperparameters_exploration.png)
+![Figura 5 - Exploração de distribuição dos individuos](images/streamlit_hiperparameters_exploration.png)
 
 *Figura 5 - Exploração de distribuição dos individuos*
 
-![Log INFO](images/streamlit_model_comparation.png)
+![Figura 6 - Comparação entre os modelos](images/streamlit_model_comparation.png)
 
 *Figura 6 - Comparação entre os modelos*
 
@@ -400,16 +400,16 @@ Cada linha do log é prefixada com uma tag de seção entre colchetes. A tabela 
 
 | Seção          | Nível   | Descrição                                                                                                          |
 |:---------------|:-------:|:-------------------------------------------------------------------------------------------------------------------|
-| `[RUN_START]`  | INFO    | Registra os parâmetros da execução: algoritmo, tamanho da população, `max_gen`, probabilidades de mutação e meta de CV. |
-| `[GEN_START]`  | INFO    | Marca o início de cada geração (ex.: `── geração=1 ──`). A geração 0 corresponde à população inicial.             |
-| `[GEN_STATS]`  | INFO    | Estatísticas ao fim de cada geração: melhor fitness, fitness médio, meta de CV e genes do melhor indivíduo.        |
-| `[SELECTION]`  | INFO    | Resume a seleção por torneio: método, `tournsize` e quantidade de indivíduos selecionados.                         |
-| `[CROSSOVER]`  | INFO    | Para pares que realizaram troca (`CX=SIM`): registra os índices do par, os genes trocados e os cromossomos antes/depois. Pares com pais idênticos (`CX=NAO`) são omitidos no nível INFO. |
-| `[MUTATION]`   | INFO    | Para indivíduos mutados (`MUT=SIM`): registra o índice do indivíduo, os genes alterados e o cromossomo antes/depois. Indivíduos não mutados (`MUT=NAO`) são omitidos no nível INFO. |
-| `[RUN_END]`    | INFO    | Registra o encerramento da execução: geração final, melhor fitness, tempo total, se a meta foi atingida e os genes do melhor indivíduo. |
-| `[PROFILING]`  | INFO    | Bloco emitido ao final com o tempo acumulado por fase (seleção, crossover, mutação, avaliação): total, chamadas, média e percentual. |
+| `[RUN_START]`  | `INFO`    | Registra os parâmetros da execução: algoritmo, tamanho da população, `max_gen`, probabilidades de mutação e meta de CV. |
+| `[GEN_START]`  | `INFO`    | Marca o início de cada geração (ex.: `── geração=1 ──`). A geração 0 corresponde à população inicial.             |
+| `[GEN_STATS]`  | `INFO`    | Estatísticas ao fim de cada geração: melhor fitness, fitness médio, meta de CV e genes do melhor indivíduo.        |
+| `[SELECTION]`  | `INFO`    | Resume a seleção por torneio: método, `tournsize` e quantidade de indivíduos selecionados.                         |
+| `[CROSSOVER]`  | `INFO`    | Para pares que realizaram troca (`CX=SIM`): registra os índices do par, os genes trocados e os cromossomos antes/depois. Pares com pais idênticos (`CX=NAO`) são omitidos no nível INFO. |
+| `[MUTATION]`   | `INFO`    | Para indivíduos mutados (`MUT=SIM`): registra o índice do indivíduo, os genes alterados e o cromossomo antes/depois. Indivíduos não mutados (`MUT=NAO`) são omitidos no nível INFO. |
+| `[RUN_END]`    | `INFO`    | Registra o encerramento da execução: geração final, melhor fitness, tempo total, se a meta foi atingida e os genes do melhor indivíduo. |
+| `[PROFILING]`  | `INFO`    | Bloco emitido ao final com o tempo acumulado por fase (seleção, crossover, mutação, avaliação): total, chamadas, média e percentual. |
 
-![Log INFO](images/log_level_info.png)
+![Figura 7 - Log level info](images/log_level_info.png)
 
 *Figura 7 - Log level info*
 
@@ -417,12 +417,12 @@ Com `GA_LOG_LEVEL=DEBUG`, duas seções adicionais são emitidas:
 
 | Seção          | Nível   | Descrição                                                                                                          |
 |:---------------|:-------:|:-------------------------------------------------------------------------------------------------------------------|
-| `[INDIVIDUAL]` | DEBUG   | Lista todos os indivíduos da população ao fim de cada geração, ordenados por fitness (rank), com seus genes decodificados. |
-| `[SELECTED]`   | DEBUG   | Lista cada indivíduo escolhido pela seleção por torneio, com seu slot na nova geração, fitness e genes.            |
+| `[INDIVIDUAL]` | `DEBUG`   | Lista todos os indivíduos da população ao fim de cada geração, ordenados por fitness (rank), com seus genes decodificados. |
+| `[SELECTED]`   | `DEBUG`   | Lista cada indivíduo escolhido pela seleção por torneio, com seu slot na nova geração, fitness e genes.            |
 
 > Com `DEBUG` também passam a aparecer as entradas `[CROSSOVER] CX=NAO` e `[MUTATION] MUT=NAO`, registrando os pares e indivíduos que **não** foram modificados em cada geração.
 
-![Log INFO](images/log_level_debug.png)
+![Figura 8 - Log level debug](images/log_level_debug.png)
 
 *Figura 8 - Log level debug*
 
@@ -482,7 +482,7 @@ O arquivo `src/test/test_ga_rf_optimizer.py` cobre os componentes críticos da i
 pytest src/test/test_ga_rf_optimizer.py -v -s
 ```
 
-![Log INFO](images/ga_unit_tests.png)
+![Figura 9 - Testes unitários](images/ga_unit_tests.png)
 
 *Figura 9 - Testes unitários*
 
@@ -507,7 +507,7 @@ Para executar a versão DEAP:
 python src/main.py ga_deap --n_pop 10
 ```
 
-**IMPORTANTE**: Conforme visto na arquitetura do projeto, a implementação principal é o algoritmo genético construído pelo grupo. Desta forma, o Dashboard Stremlit só faz uso do ga_rf_optimizer.py.
+**IMPORTANTE**: Conforme visto na arquitetura do projeto, a implementação principal é o algoritmo genético construído pelo grupo. Desta forma, o Dashboard Stremlit só faz uso do `ga_rf_optimizer.py`.
 
 ### 4.7 Tecnologias Utilizadas
 
@@ -538,7 +538,7 @@ Foram realizados três experimentos principais com diferentes configurações de
 
 ### 5.2 Experimento 1 (EXP1)
 
-No expiremento 1 foram usados os parâmetros padrão do sistema.
+No experimento 1 foram usados os parâmetros padrão do sistema.
 
 **Melhor indivíduo encontrado:**
 
@@ -569,15 +569,15 @@ No expiremento 1 foram usados os parâmetros padrão do sistema.
 | Seleção | 0,000 | 12 | 0,11 | 0,0% |
 | **TOTAL** | **22,009** | | | |
 
-![Log INFO](images/resultado_ga_rf_optimizer-EXP1.png)
+![Figura 10 - Resultado Experimento 1](images/resultado_ga_rf_optimizer-EXP1.png)
 
 *Figura 10 - Resultado Experimento 1*
 
 ### 5.3 Experimento 2 (EXP2)
 
-Para o expiremento dois ajustamos a população para 20 individuos e reduzimos a probabilidade de mutação para 0.30. Também ajustarmos a meta alvo em 0,5% sobre o valor padrão de 0.7867, a nova meta a ser alcançada foi 0.7906.
+Para o experimento dois ajustamos a população para 20 individuos e reduzimos a probabilidade de mutação para 0.30. Também ajustarmos a meta alvo em 0,5% sobre o valor padrão de 0.7867, a nova meta a ser alcançada foi 0.7906.
 
-Mesmo o algoritimo tendo conseguido ultrapassar essa nova meta, a validação do conjunto de testes teve acurácia abaixo do esperado em relação ao modelo original.
+Mesmo o algoritmo tendo conseguido ultrapassar essa nova meta, a validação do conjunto de testes teve acurácia abaixo do esperado em relação ao modelo original.
 
 **Melhor indivíduo encontrado:**
 
@@ -608,15 +608,15 @@ Mesmo o algoritimo tendo conseguido ultrapassar essa nova meta, a validação do
 | Seleção | 0,015 | 54 | 0,29 | 0,0% |
 | **TOTAL** | **130,915**</br>(2,10 minutos) | | | |
 
-![Log INFO](images/resultado_ga_rf_optimizer-EXP2.png)
+![Figura 11 - Resultado Experimento 2](images/resultado_ga_rf_optimizer-EXP2.png)
 
 *Figura 11 - Resultado Experimento 2*
 
 ### 5.4 Experimento 3 (EXP3)
 
-Para o expiremento três ajustamos a população para 30 individuos e aumentamos a probabilidade de mutação para 0.80. Também ajustarmos a meta alvo em 0,7% sobre o valor padrão de 0.7867, a nova meta a ser alcançada foi 0.7922.
+Para o experimento três ajustamos a população para 30 indivíduos e aumentamos a probabilidade de mutação para 0.80. Também ajustarmos a meta alvo em 0,7% sobre o valor padrão de 0.7867, a nova meta a ser alcançada foi 0.7922.
 
-Da mesma forma que o Experimento 2, o algoritimo tendo conseguido ultrapassar essa nova meta, a validação do conjunto de testes teve o mesmo resultado que EXP2.
+Da mesma forma que o Experimento 2, o algoritmo tendo conseguido ultrapassar essa nova meta, a validação do conjunto de testes teve o mesmo resultado que EXP2.
 
 **Melhor indivíduo encontrado:**
 
@@ -647,7 +647,7 @@ Da mesma forma que o Experimento 2, o algoritimo tendo conseguido ultrapassar es
 | Seleção | 0,107 | 255 | 0,42 | 0,0% |
 | **TOTAL** | **2324,763**</br>(~39 minutos) | | | |
 
-![Log INFO](images/resultado_ga_rf_optimizer-EXP3.png)
+![Figura 12 - Resultado Experimento 3](images/resultado_ga_rf_optimizer-EXP3.png)
 
 *Figura 12 - Resultado Experimento 3*
 
