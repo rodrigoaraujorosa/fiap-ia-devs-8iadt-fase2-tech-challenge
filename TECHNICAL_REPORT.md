@@ -758,19 +758,77 @@ Não diabético       0.79      0.85      0.82       100
 
 ## 7. Integração com LLMs
 
-> ⚠️ *Seção a ser preenchida posteriormente.*
-
 ### 7.1 Abordagem
 
-*[Descrever como os LLMs foram integrados ao projeto: qual modelo utilizado, finalidade da integração (geração de código, análise de resultados, suporte à documentação, etc.) e como foi incorporado ao fluxo de trabalho.]*
+O LLM foi integrado ao **Sistema de Diagnóstico de Diabetes** — entregável complementar deste Tech Challenge, hospedado no Hugging Face Space — com o objetivo de transformar a predição numérica do modelo em uma **explicação clínica em linguagem natural**, útil para profissionais de saúde.
+
+| Item | Detalhe |
+|:---|:---|
+| **Modelo** | `gpt-4o-mini` (OpenAI) |
+| **Biblioteca** | `openai` (Python SDK) |
+| **Finalidade** | Geração de análise clínica estruturada a partir da predição do Random Forest e dos dados do paciente |
+| **Ativação** | Chamada síncrona ao final de cada predição, via função `gerar_explicacao_llm()` |
+| **Configuração** | Chave de API via variável de ambiente `OPENAI_API_KEY` (Hugging Face Secrets ou `.env` local) |
+
+O fluxo de integração é o seguinte: o Random Forest produz o diagnóstico (`DIABÉTICO` / `NÃO DIABÉTICO`) e as probabilidades; esses resultados, junto com os oito parâmetros clínicos do paciente, são passados para `gerar_explicacao_llm()`, que monta os prompts, chama a API e retorna a análise gerada pelo modelo como um quarto painel na interface Gradio.
 
 ### 7.2 Prompts Utilizados
 
-*[Listar e descrever os principais prompts empregados, incluindo contexto, instruções fornecidas ao modelo e exemplos representativos.]*
+A chamada é composta por dois prompts separados — sistema e usuário — passados via `messages` para o endpoint `chat.completions`:
+
+**Prompt de Sistema** — define o papel e a linguagem de resposta:
+
+```
+Você é um assistente médico especializado em diabetes, com expertise em
+interpretar dados clínicos e fornecer insights acionáveis para profissionais
+de saúde. Suas respostas devem ser claras, precisas e clinicamente relevantes.
+Responda sempre em português brasileiro.
+```
+
+**Prompt de Usuário** — fornece os dados do paciente, o resultado do modelo e solicita uma análise estruturada em quatro tópicos:
+
+```
+Analise os dados clínicos abaixo e o resultado de um modelo de Machine
+Learning (Random Forest) treinado no Pima Indians Diabetes Database.
+
+Dados Clínicos do Paciente:
+- Número de gestações: {pregnancies}
+- Glicose plasmática: {glucose} mg/dL
+- Pressão arterial diastólica: {blood_pressure} mm Hg
+- Espessura da dobra cutânea (tríceps): {skin_thickness} mm
+- Insulina sérica: {insulin} mu U/ml
+- IMC: {bmi}
+- Função de pedigree de diabetes: {diabetes_pedigree}
+- Idade: {age} anos
+
+Resultado do Modelo:
+- Diagnóstico: DIABÉTICO / NÃO DIABÉTICO
+- Probabilidade de diabetes: X%
+- Confiança do diagnóstico: X%
+
+Forneça uma análise estruturada com os seguintes tópicos:
+1. Explicação do Diagnóstico
+2. Fatores de Risco Identificados
+3. Insights Acionáveis para o Médico (3 a 5 recomendações)
+4. Próximos Passos Sugeridos
+```
+
+**Parâmetros de geração:** `temperature=0.3` (respostas determinísticas e consistentes) e `max_tokens=1200` (suficiente para uma análise completa em quatro tópicos).
 
 ### 7.3 Avaliação da Qualidade
 
-*[Descrever os critérios utilizados para avaliar a qualidade das respostas geradas pelos LLMs: precisão técnica, necessidade de revisão manual, casos onde o modelo auxiliou efetivamente versus casos onde gerou resultados inadequados.]*
+A qualidade das respostas foi avaliada de forma qualitativa durante o desenvolvimento, com os seguintes critérios:
+
+| Critério | Observação |
+|:---|:---|
+| **Precisão clínica** | As explicações geradas são consistentes com os valores dos parâmetros: quando glicose ou IMC estão em faixas de risco, o modelo os destaca corretamente nos fatores de risco. |
+| **Aderência à estrutura solicitada** | O `gpt-4o-mini` respeitou os quatro tópicos pedidos no prompt em praticamente todas as execuções, sem necessidade de pós-processamento. |
+| **Necessidade de revisão manual** | A temperatura baixa (`0.3`) produziu respostas estáveis e com pouca variação entre execuções com os mesmos dados, reduzindo a necessidade de revisão. |
+| **Limitações identificadas** | O modelo não tem acesso ao peso relativo de cada variável no Random Forest (importância das features), portanto a justificativa sobre "quais parâmetros mais influenciaram" é inferida dos valores clínicos — não da estrutura interna do modelo. |
+| **Casos bem atendidos** | Pacientes com múltiplos fatores de risco simultâneos (glicose alta + obesidade + histórico familiar): o LLM produziu análises ricas e com recomendações específicas. |
+| **Casos com resposta genérica** | Pacientes com perfil de baixo risco e parâmetros todos normais: as respostas tendem a ser menos detalhadas, pois há menos fatores de risco para explorar. |
+
+O aviso `⚠️ Lembrete: este é um modelo preditivo e não substitui avaliação médica completa` foi mantido no prompt de usuário para que o LLM replique essa ressalva em suas respostas, reforçando o caráter de suporte — e não de substituição — ao diagnóstico médico.
 
 ---
 
@@ -788,10 +846,13 @@ As principais contribuições técnicas do projeto incluem:
 - **Avaliação Lazy**, que reduziu o custo computacional ao evitar reavaliações desnecessárias de CV.
 - **Elitismo de semente**, que acelerou a convergência injetando o melhor resultado conhecido da Fase 1 como ponto de partida.
 - **Penalidade de instabilidade no fitness**, que promoveu modelos consistentes entre folds em vez de apenas modelos com alta média.
+- **Integração com LLM**, que elevou a utilidade clínica do sistema ao transformar saídas numéricas do modelo em explicações estruturadas em linguagem natural.
 
 A observação de acurácia de teste idêntica entre EXP2 e EXP3 evidencia uma limitação inerente ao dataset Pima Indians: com apenas 154 amostras no conjunto de teste, a granularidade da métrica de acurácia é de ~0,65 p.p. por amostra, tornando o CV 5-fold um discriminador mais sensível para comparação entre modelos.
 
-Como trabalhos futuros, sugere-se: (i) ampliar o espaço de busca incluindo hiperparâmetros adicionais como `criterion` e `bootstrap`; (ii) paralelizar as avaliações de CV com `multiprocessing`; (iii) aplicar o AG a outros classificadores além do Random Forest.
+O modelo otimizado pelo AG foi integrado ao Sistema de Diagnóstico de Diabetes, onde a predição do Random Forest é complementada por uma análise clínica gerada pelo `gpt-4o-mini` (OpenAI). A integração demonstrou que LLMs podem atuar como uma camada de interpretabilidade sobre modelos de ML: ao receber os dados do paciente e o resultado da predição, o modelo gerou explicações estruturadas — fatores de risco, insights acionáveis e próximos passos — de forma consistente e sem necessidade de pós-processamento. A principal limitação identificada foi a ausência da importância das features do Random Forest no contexto enviado ao LLM, o que torna a explicação dependente dos valores clínicos absolutos em vez da contribuição real de cada variável na predição.
+
+Como trabalhos futuros, sugere-se: (i) ampliar o espaço de busca incluindo hiperparâmetros adicionais como `criterion` e `bootstrap`; (ii) paralelizar as avaliações de CV com `multiprocessing`; (iii) aplicar o AG a outros classificadores além do Random Forest; (iv) enriquecer o contexto enviado ao LLM com a importância das features do modelo para explicações mais precisas e fundamentadas.
 
 ---
 
