@@ -34,7 +34,7 @@ Implementar do zero um Algoritmo Genético capaz de otimizar os hiperparâmetros
 | Este Relatório | Relatório Técnico do Projeto |
 | Repositório — Algoritmo Genético | [github.com/rodrigoaraujorosa/fiap-ia-devs-8iadt-fase2-tech-challenge](https://github.com/rodrigoaraujorosa/fiap-ia-devs-8iadt-fase2-tech-challenge)</br>**IMPORTANTE**: o arquivo README.md do repositório tem informações de como executar o projeto e por esse motivo não será incluído neste relatório técnico|
 | Repositório — Sistema de Diagnóstico de Diabetes | [github.com/rodrigoaraujorosa/detector-diabetes-optmized-techchallenge-8iadt](https://github.com/rodrigoaraujorosa/detector-diabetes-optmized-techchallenge-8iadt) |
-| Hugging Face Space — Sistema de Diagnóstico | [huggingface.co/spaces/rodrigoaraujorosa/detector-diabetes-techchalenge-8iadt](https://huggingface.co/spaces/rodrigoaraujorosa/detector-diabetes-techchalenge-8iadt) |
+| Hugging Face Space — Sistema de Diagnóstico | [huggingface.co/spaces/rodrigoaraujorosa/diagnostico-diabetes-model-optimized](https://huggingface.co/spaces/rodrigoaraujorosa/diagnostico-diabetes-model-optimized) |
 | Vídeo de Apresentação | *Em breve* |
 
 ### 1.3 Dataset
@@ -829,6 +829,60 @@ A qualidade das respostas foi avaliada de forma qualitativa durante o desenvolvi
 | **Casos com resposta genérica** | Pacientes com perfil de baixo risco e parâmetros todos normais: as respostas tendem a ser menos detalhadas, pois há menos fatores de risco para explorar. |
 
 O aviso `⚠️ Lembrete: este é um modelo preditivo e não substitui avaliação médica completa` foi mantido no prompt de usuário para que o LLM replique essa ressalva em suas respostas, reforçando o caráter de suporte — e não de substituição — ao diagnóstico médico.
+
+### 7.4 Interface do Sistema
+
+A interface foi desenvolvida com **Gradio** e é composta por dois painéis principais: à esquerda, os controles de entrada dos parâmetros clínicos do paciente; à direita, o resultado do diagnóstico com as probabilidades, a análise dos parâmetros e o texto estruturado gerado pela LLM.
+
+**Tela Principal — Controles e Retorno dos Parâmetros**
+
+A tela principal exibe os sliders para cada variável clínica (Gestações, Glicose, Pressão Arterial Diastólica, Espessura da Pele, Insulina, IMC, Função Pedigree de Diabetes e Idade), o resultado da predição com o nível de confiança, as probabilidades de cada classe e a análise resumida dos parâmetros com indicadores visuais de risco.
+
+![Figura 13 — Tela principal do sistema de diagnóstico](images/sistema_diagnostico_tela_principal.png)
+
+*Figura 13 — Tela principal do sistema de diagnóstico de diabetes com os controles de entrada e o retorno dos parâmetros clínicos*
+
+**Texto Estruturado Retornado pela LLM**
+
+Após a predição, o sistema envia os dados do paciente para o `gpt-4o-mini` e exibe o texto estruturado com quatro seções: Explicação do Diagnóstico, Fatores de Risco Identificados, Insights Acionáveis para o Médico e Próximos Passos Sugeridos.
+
+![Figura 14 — Texto estruturado retornado pela LLM](images/sistema_diagnostico_texto_retornado_llm.png)
+
+*Figura 14 — Análise clínica estruturada gerada pelo `gpt-4o-mini` com base nos dados do paciente e no resultado do modelo Random Forest*
+
+### 7.5 Comparativo entre o Modelo da Fase 1 e o Modelo da Fase 2
+
+Os exemplos a seguir ilustram o ganho de confiança obtido com o modelo otimizado pelo Algoritmo Genético (Fase 2) em relação ao modelo original ajustado via GridSearch (Fase 1). Em ambos os casos, o modelo da Fase 2 apresenta uma probabilidade mais elevada para a classe predita, refletindo diretamente a melhora, em alguns casos, nos hiperparâmetros encontrados pelo AG.
+
+**Exemplo 1**
+
+<table>
+  <tr>
+    <th align="center">Fase 1 — GridSearch</th>
+    <th align="center">Fase 2 — Algoritmo Genético</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="images/diagnostico_modelo_fase1_exemplo1.png" alt="Diagnóstico Fase 1 — Exemplo 1" width="480"/></td>
+    <td align="center"><img src="images/diagnostico_modelo_fase2_exemplo1.png" alt="Diagnóstico Fase 2 — Exemplo 1" width="480"/></td>
+  </tr>
+</table>
+
+*Figura 15 — Comparativo do Exemplo 1: o modelo da Fase 2 apresenta maior confiança na predição em relação ao modelo da Fase 1.*
+
+**Exemplo 2**
+
+<table>
+  <tr>
+    <th align="center">Fase 1 — GridSearch</th>
+    <th align="center">Fase 2 — Algoritmo Genético</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="images/diagnostico_modelo_fase1_exemplo2.png" alt="Diagnóstico Fase 1 — Exemplo 2" width="480"/></td>
+    <td align="center"><img src="images/diagnostico_modelo_fase2_exemplo2.png" alt="Diagnóstico Fase 2 — Exemplo 2" width="480"/></td>
+  </tr>
+</table>
+
+*Figura 16 — Comparativo do Exemplo 2: novamente o modelo da Fase 2 demonstra confiança superior, evidenciando o benefício da otimização via Algoritmo Genético.*
 
 ---
 
