@@ -6,3 +6,5 @@ scikit-learn
 pytest
 python-dotenv
 matplotlib
+openai>=1.0.0
+hypothesis

@@ -34,8 +34,8 @@ Implementar do zero um Algoritmo Genético capaz de otimizar os hiperparâmetros
 | Este Relatório | Relatório Técnico do Projeto |
 | Repositório — Algoritmo Genético | [github.com/rodrigoaraujorosa/fiap-ia-devs-8iadt-fase2-tech-challenge](https://github.com/rodrigoaraujorosa/fiap-ia-devs-8iadt-fase2-tech-challenge)</br>**IMPORTANTE**: o arquivo README.md do repositório tem informações de como executar o projeto e por esse motivo não será incluído neste relatório técnico|
 | Repositório — Sistema de Diagnóstico de Diabetes | [github.com/rodrigoaraujorosa/detector-diabetes-optmized-techchallenge-8iadt](https://github.com/rodrigoaraujorosa/detector-diabetes-optmized-techchallenge-8iadt) |
-| Hugging Face Space — Sistema de Diagnóstico | [huggingface.co/spaces/rodrigoaraujorosa/detector-diabetes-techchalenge-8iadt](https://huggingface.co/spaces/rodrigoaraujorosa/detector-diabetes-techchalenge-8iadt) |
-| Vídeo de Apresentação | *Em breve* |
+| Hugging Face Space — Sistema de Diagnóstico | [huggingface.co/spaces/rodrigoaraujorosa/diagnostico-diabetes-model-optimized](https://huggingface.co/spaces/rodrigoaraujorosa/diagnostico-diabetes-model-optimized) |
+| Vídeo de Apresentação | [youtu.be/4yKjaFkX62M](https://youtu.be/4yKjaFkX62M) |
 
 ### 1.3 Dataset
 
@@ -60,7 +60,7 @@ Um Algoritmo Genético é uma metaheurística inspirada na teoria evolutiva de D
 2. **Crossover (Cruzamento)** — combina material genético de dois pais para gerar filhos.
 3. **Mutação** — introduz variações aleatórias para manter diversidade genética.
 
-Ao longo das gerações, a população tende a convergir para regiões de alta aptidão no espaço de busca — neste projeto, regiões com boa acurácia de validação cruzada.
+Ao longo das gerações, a população tende a convergir para regiões de alta aptidão no espaço de busca, neste projeto, regiões com boa acurácia de validação cruzada.
 
 ### 2.2 Representação do Cromossomo
 
@@ -84,7 +84,7 @@ A aptidão de cada indivíduo é calculada treinando um `RandomForestClassifier`
 
 $$\text{fitness} = \overline{\text{CV}} - 0{,}1 \times \sigma_{\text{CV}}$$
 
-Combinar média e desvio padrão penaliza soluções instáveis — aquelas que acertam muito em alguns folds mas erram em outros. O objetivo é encontrar modelos acurados e consistentes.
+Combinar média e desvio padrão penaliza soluções instáveis, aquelas que acertam muito em alguns folds mas erram em outros. O objetivo é encontrar modelos acurados e consistentes.
 
 **Implementação**
 
@@ -143,7 +143,7 @@ Saída:
 Offspring[0] = [40, 24, 1, 5, 1]
 ```
 
-**Crossover de Dois Pontos com Garantia de Divergência:** Antes de sortear os pontos de corte, o algoritmo identifica os índices onde os dois pais diferem e ancora um dos pontos nessa região, garantindo que o segmento trocado contenha ao menos um gene distinto — eliminando crossovers nulos.
+**Crossover de Dois Pontos com Garantia de Divergência:** Antes de sortear os pontos de corte, o algoritmo identifica os índices onde os dois pais diferem e ancora um dos pontos nessa região, garantindo que o segmento trocado contenha ao menos um gene distinto, eliminando crossovers nulos.
 
 **Implementação**
 
@@ -349,7 +349,7 @@ graph LR
 **Decisão 8 — `random_state=42` no `RandomForestClassifier`, não no AG**
 
 *Desafio:* Garantir reprodutibilidade da avaliação sem eliminar a natureza exploratória do AG.  
-*Solução:* O `RandomForestClassifier` usa `random_state=42` — dois indivíduos com os mesmos genes sempre terão o mesmo fitness. O AG não tem seed global, permitindo que execuções distintas explorem regiões diferentes do espaço de busca.
+*Solução:* O `RandomForestClassifier` usa `random_state=42`, dois indivíduos com os mesmos genes sempre terão o mesmo fitness. O AG não tem seed global, permitindo que execuções distintas explorem regiões diferentes do espaço de busca.
 
 ---
 
@@ -694,7 +694,7 @@ Os três experimentos superaram a meta de CV accuracy da Fase 1 (0,7867), confir
 
 Considerando os parâmetros de evolução, observa-se um trade-off claro entre exploração e custo computacional. O **EXP1** (`n_pop=10`, `mut_pb=0,60`) manteve boa diversidade genética com baixo custo, convergindo rápido e com melhor resultado de teste. O **EXP2** (`n_pop=20`, `mut_pb=0,30`) aumentou a população, mas reduziu a taxa de mutação por indivíduo, favorecendo uma busca mais conservadora. Já o **EXP3** (`n_pop=30`, `mut_pb=0,80`) combinou alta diversidade inicial com forte perturbação por mutação, ampliando a exploração do espaço e elevando o CV, porém com custo muito maior.
 
-Um resultado de atenção: apesar de EXP2 e EXP3 terem superado metas de CV progressivamente mais ambiciosas (+0,5% e +0,7% acima de 0,7867), ambos produziram acurácia no teste de **72,08%** — abaixo do modelo original da Fase 1 (75,32%). Isso evidencia que ampliar artificialmente a exigência sobre o CV accuracy não implica, necessariamente, melhor generalização no conjunto de teste — fenômeno que será discutido em detalhes na seção 6.3.
+Um ponto de atenção: apesar de EXP2 e EXP3 terem superado metas de CV progressivamente mais ambiciosas (+0,5% e +0,7% acima de 0,7867), ambos produziram acurácia no teste de **72,08%** — abaixo do modelo original da Fase 1 (75,32%). Isso evidencia que ampliar artificialmente a exigência sobre o CV accuracy não implica, necessariamente, melhor generalização no conjunto de teste, fenômeno que será discutido em detalhes na seção 6.3.
 
 ### 6.2 Comparação com o Modelo Original (Fase 1)
 
@@ -706,13 +706,13 @@ O **EXP1** foi o experimento que melhor equilibrou CV accuracy e acurácia no te
 | **Otimizado — EXP1 (AG Fase 2)** | **75,97%** | **78,81%** | **0,63** |
 | **Δ (melhoria)** | **+0,65 p.p.** | **+0,14 p.p.** | **+0,01** |
 
-EXP2 e EXP3, apesar de alcançarem CV accuracies superiores (0,7913 e 0,7929, respectivamente), produziram acurácia no teste de **72,08%** — 3,24 p.p. abaixo do modelo original. Embora o ganho de CV seja expressivo, esses modelos não generalizaram para o conjunto de teste.
+EXP2 e EXP3, apesar de alcançarem CV accuracies superiores (0,7913 e 0,7929, respectivamente), produziram acurácia no teste de **72,08%**, 3,24 p.p. abaixo do modelo original. Embora o ganho de CV seja expressivo, esses modelos não generalizaram para o conjunto de teste.
 
 Do ponto de vista paramétrico, o comportamento observado é consistente: no **EXP2**, a combinação de população maior (`n_pop=20`) com menor mutação (`mut_pb=0,30`) tende a preservar estruturas já boas, mas pode reduzir a capacidade de escapar de regiões subótimas quando a meta de CV é mais exigente. No **EXP3**, o aumento simultâneo de população e mutação (`n_pop=30`, `mut_pb=0,80`) aumentou fortemente a exploração e o pico de CV, porém sem converter esse ganho em performance de teste. Na prática, os resultados indicam que, para este problema e dataset, a configuração intermediária/padrão do **EXP1** ofereceu melhor equilíbrio entre exploração, estabilidade e generalização.
 
 ### 6.3 Divergência entre CV Accuracy e Acurácia de Teste
 
-Um resultado notável é que **EXP2 e EXP3 produziram exatamente a mesma acurácia no conjunto de teste (72,08%)**, mesmo com hiperparâmetros e CV accuracies distintos, enquanto o **EXP1 atingiu 75,97%** — superior ao modelo original. Esse padrão é explicado pela granularidade discreta da métrica com apenas **154 amostras** no conjunto de teste.
+Um resultado notável é que **EXP2 e EXP3 produziram exatamente a mesma acurácia no conjunto de teste (72,08%)**, mesmo com hiperparâmetros e CV accuracies distintos, enquanto o **EXP1 atingiu 75,97%**, superior ao modelo original. Esse padrão é explicado pela granularidade discreta da métrica com apenas **154 amostras** no conjunto de teste.
 
 A acurácia no teste é calculada como:
 
@@ -727,19 +727,19 @@ Cada "degrau" possível vale $\frac{1}{154} \approx 0{,}65\%$. Os valores releva
 | **117** | **75,97%** | **EXP1** |
 | 118 | 76,62% | — |
 
-EXP2 e EXP3 acertaram **111 amostras** — seis a menos que o EXP1 (117) — apesar de apresentarem CV accuracies mais altos. Esse aparente paradoxo é explicado por dois fatores:
+EXP2 e EXP3 acertaram **111 amostras**, seis a menos que o EXP1 (117), apesar de apresentarem CV accuracies mais altos. Esse aparente paradoxo é explicado por dois fatores:
 
 1. **Granularidade do teste**: com apenas 154 amostras, cada degrau equivale a uma amostra e $0{,}65\%$. O CV 5-fold, ao utilizar ~490 amostras por fold em múltiplas repetições, é um discriminador significativamente mais sensível a pequenas diferenças de hiperparâmetros.
 
-2. **Overfitting ao processo de CV**: ao exigir metas progressivamente mais altas (EXP2: 0,7906; EXP3: 0,7922), o AG convergiu para hiperparâmetros que otimizam o desempenho médio nos folds de validação sem necessariamente generalizar para o conjunto de teste — dados que os modelos nunca viram durante a evolução.
+2. **Overfitting ao processo de CV**: ao exigir metas progressivamente mais altas (EXP2: 0,7906; EXP3: 0,7922), o AG convergiu para hiperparâmetros que otimizam o desempenho médio nos folds de validação sem necessariamente generalizar para o conjunto de teste, dados que os modelos nunca viram durante a evolução.
 
 Os parâmetros de evolução reforçam esse efeito. Em cenários com meta mais rígida, aumentar muito `n_pop` (20 e 30) eleva o número de combinações avaliadas por geração, e extremos de `mut_pb` (0,30 no EXP2 e 0,80 no EXP3) alteram o regime de busca: mutação baixa favorece refinamento local; mutação alta favorece exploração agressiva. Em ambos os casos, o AG pode se adaptar cada vez mais ao sinal da validação cruzada, sem ganho correspondente no teste.
 
-EXP2 e EXP3 acertaram exatamente **111 amostras** cada um — o mesmo número — pois as combinações de hiperparâmetros encontradas tendem a errar nas **mesmas amostras difíceis** (casos limítrofes de diabetes), independentemente das diferenças nos genes. Isso confirma que o CV 5-fold é um discriminador mais sensível do que a acurácia no teste com datasets pequenos, mas também evidencia o risco de elevar a meta de CV além do necessário: o modelo pode se especializar nos padrões dos folds de validação sem melhorar — ou até piorando — no conjunto de teste final.
+EXP2 e EXP3 acertaram exatamente **111 amostras** cada um, o mesmo número, pois as combinações de hiperparâmetros encontradas tendem a errar nas **mesmas amostras difíceis** (casos limítrofes de diabetes), independentemente das diferenças nos genes. Isso confirma que o CV 5-fold é um discriminador mais sensível do que a acurácia no teste com datasets pequenos, mas também evidencia o risco de elevar a meta de CV além do necessário: o modelo pode se especializar nos padrões dos folds de validação sem melhorar ou até piorando no conjunto de teste final.
 
 ### 6.4 Análise de Custo Computacional
 
-Em todos os experimentos, **~99,9% do tempo total foi gasto na fase de avaliação** (CV 5-fold). Os operadores genéticos (seleção, crossover, mutação) são desprezíveis em tempo. Isso valida a decisão de implementar a **Avaliação Lazy**, que evita reavaliar indivíduos não modificados — sem ela, o custo computacional seria proporcional ao número de indivíduos por geração multiplicado pelo número de gerações.
+Em todos os experimentos, **~99,9% do tempo total foi gasto na fase de avaliação** (CV 5-fold). Os operadores genéticos (seleção, crossover, mutação) são desprezíveis em tempo. Isso valida a decisão de implementar a **Avaliação Lazy**, que evita reavaliar indivíduos não modificados, sem ela, o custo computacional seria proporcional ao número de indivíduos por geração multiplicado pelo número de gerações.
 
 ### 6.5 Relatório de Classificação — Melhor Modelo (EXP1)
 
@@ -760,7 +760,7 @@ Não diabético       0.79      0.85      0.82       100
 
 ### 7.1 Abordagem
 
-O LLM foi integrado ao **Sistema de Diagnóstico de Diabetes** — entregável complementar deste Tech Challenge, hospedado no Hugging Face Space — com o objetivo de transformar a predição numérica do modelo em uma **explicação clínica em linguagem natural**, útil para profissionais de saúde.
+O LLM foi integrado ao **Sistema de Diagnóstico de Diabetes**, entregável complementar deste Tech Challenge, hospedado no Hugging Face Space, com o objetivo de transformar a predição numérica do modelo em uma **explicação clínica em linguagem natural**, útil para profissionais de saúde.
 
 | Item | Detalhe |
 |:---|:---|
@@ -774,7 +774,7 @@ O fluxo de integração é o seguinte: o Random Forest produz o diagnóstico (`D
 
 ### 7.2 Prompts Utilizados
 
-A chamada é composta por dois prompts separados — sistema e usuário — passados via `messages` para o endpoint `chat.completions`:
+A chamada é composta por dois prompts separados (sistema e usuário), passados via `messages` para o endpoint `chat.completions`:
 
 **Prompt de Sistema** — define o papel e a linguagem de resposta:
 
@@ -828,7 +828,61 @@ A qualidade das respostas foi avaliada de forma qualitativa durante o desenvolvi
 | **Casos bem atendidos** | Pacientes com múltiplos fatores de risco simultâneos (glicose alta + obesidade + histórico familiar): o LLM produziu análises ricas e com recomendações específicas. |
 | **Casos com resposta genérica** | Pacientes com perfil de baixo risco e parâmetros todos normais: as respostas tendem a ser menos detalhadas, pois há menos fatores de risco para explorar. |
 
-O aviso `⚠️ Lembrete: este é um modelo preditivo e não substitui avaliação médica completa` foi mantido no prompt de usuário para que o LLM replique essa ressalva em suas respostas, reforçando o caráter de suporte — e não de substituição — ao diagnóstico médico.
+O aviso `⚠️ Lembrete: este é um modelo preditivo e não substitui avaliação médica completa` foi mantido no prompt de usuário para que o LLM replique essa ressalva em suas respostas, reforçando o caráter de suporte, e não de substituição, ao diagnóstico médico.
+
+### 7.4 Interface do Sistema
+
+A interface foi desenvolvida com **Gradio** e é composta por dois painéis principais: à esquerda, os controles de entrada dos parâmetros clínicos do paciente; à direita, o resultado do diagnóstico com as probabilidades, a análise dos parâmetros e o texto estruturado gerado pela LLM.
+
+**Tela Principal — Controles e Retorno dos Parâmetros**
+
+A tela principal exibe os sliders para cada variável clínica (Gestações, Glicose, Pressão Arterial Diastólica, Espessura da Pele, Insulina, IMC, Função Pedigree de Diabetes e Idade), o resultado da predição com o nível de confiança, as probabilidades de cada classe e a análise resumida dos parâmetros com indicadores visuais de risco.
+
+![Figura 13 — Tela principal do sistema de diagnóstico](images/sistema_diagnostico_tela_principal.png)
+
+*Figura 13 — Tela principal do sistema de diagnóstico de diabetes com os controles de entrada e o retorno dos parâmetros clínicos*
+
+**Texto Estruturado Retornado pela LLM**
+
+Após a predição, o sistema envia os dados do paciente para o `gpt-4o-mini` e exibe o texto estruturado com quatro seções: Explicação do Diagnóstico, Fatores de Risco Identificados, Insights Acionáveis para o Médico e Próximos Passos Sugeridos.
+
+![Figura 14 — Texto estruturado retornado pela LLM](images/sistema_diagnostico_texto_retornado_llm.png)
+
+*Figura 14 — Análise clínica estruturada gerada pelo `gpt-4o-mini` com base nos dados do paciente e no resultado do modelo Random Forest*
+
+### 7.5 Comparativo entre o Modelo da Fase 1 e o Modelo da Fase 2
+
+Os exemplos a seguir ilustram o ganho de confiança obtido com o modelo otimizado pelo Algoritmo Genético (Fase 2) em relação ao modelo original ajustado via GridSearch (Fase 1). Em ambos os casos, o modelo da Fase 2 apresenta uma probabilidade mais elevada para a classe predita, refletindo diretamente a melhora, em alguns casos, nos hiperparâmetros encontrados pelo AG.
+
+**Exemplo 1**
+
+<table>
+  <tr>
+    <th align="center">Fase 1 — GridSearch</th>
+    <th align="center">Fase 2 — Algoritmo Genético</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="images/diagnostico_modelo_fase1_exemplo1.png" alt="Diagnóstico Fase 1 — Exemplo 1" width="480"/></td>
+    <td align="center"><img src="images/diagnostico_modelo_fase2_exemplo1.png" alt="Diagnóstico Fase 2 — Exemplo 1" width="480"/></td>
+  </tr>
+</table>
+
+*Figura 15 — Comparativo do Exemplo 1: o modelo da Fase 2 apresenta maior confiança na predição em relação ao modelo da Fase 1.*
+
+**Exemplo 2**
+
+<table>
+  <tr>
+    <th align="center">Fase 1 — GridSearch</th>
+    <th align="center">Fase 2 — Algoritmo Genético</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="images/diagnostico_modelo_fase1_exemplo2.png" alt="Diagnóstico Fase 1 — Exemplo 2" width="480"/></td>
+    <td align="center"><img src="images/diagnostico_modelo_fase2_exemplo2.png" alt="Diagnóstico Fase 2 — Exemplo 2" width="480"/></td>
+  </tr>
+</table>
+
+*Figura 16 — Comparativo do Exemplo 2: novamente o modelo da Fase 2 demonstra confiança superior, evidenciando o benefício da otimização via Algoritmo Genético.*
 
 ---
 
@@ -850,7 +904,7 @@ As principais contribuições técnicas do projeto incluem:
 
 A observação de acurácia de teste idêntica entre EXP2 e EXP3 evidencia uma limitação inerente ao dataset Pima Indians: com apenas 154 amostras no conjunto de teste, a granularidade da métrica de acurácia é de ~0,65 p.p. por amostra, tornando o CV 5-fold um discriminador mais sensível para comparação entre modelos.
 
-O modelo otimizado pelo AG foi integrado ao Sistema de Diagnóstico de Diabetes, onde a predição do Random Forest é complementada por uma análise clínica gerada pelo `gpt-4o-mini` (OpenAI). A integração demonstrou que LLMs podem atuar como uma camada de interpretabilidade sobre modelos de ML: ao receber os dados do paciente e o resultado da predição, o modelo gerou explicações estruturadas — fatores de risco, insights acionáveis e próximos passos — de forma consistente e sem necessidade de pós-processamento. A principal limitação identificada foi a ausência da importância das features do Random Forest no contexto enviado ao LLM, o que torna a explicação dependente dos valores clínicos absolutos em vez da contribuição real de cada variável na predição.
+O modelo otimizado pelo AG foi integrado ao Sistema de Diagnóstico de Diabetes, onde a predição do Random Forest é complementada por uma análise clínica gerada pelo `gpt-4o-mini` (OpenAI). A integração demonstrou que LLMs podem atuar como uma camada de interpretabilidade sobre modelos de ML: ao receber os dados do paciente e o resultado da predição, o modelo gerou explicações estruturadas fatores de risco, insights acionáveis e próximos passos), de forma consistente e sem necessidade de pós-processamento. A principal limitação identificada foi a ausência da importância das features do Random Forest no contexto enviado ao LLM, o que torna a explicação dependente dos valores clínicos absolutos em vez da contribuição real de cada variável na predição.
 
 Como trabalhos futuros, sugere-se: (i) ampliar o espaço de busca incluindo hiperparâmetros adicionais como `criterion` e `bootstrap`; (ii) paralelizar as avaliações de CV com `multiprocessing`; (iii) aplicar o AG a outros classificadores além do Random Forest; (iv) enriquecer o contexto enviado ao LLM com a importância das features do modelo para explicações mais precisas e fundamentadas.
 
